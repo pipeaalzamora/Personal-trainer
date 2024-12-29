@@ -27,9 +27,9 @@ export default function CoursePage({ params }: { params: { id: string } }) {
           <Image
             src={course.image}
             alt={course.title}
-            width={200} // Agrega un ancho
-            height={300} // Agrega una altura, ajusta según tus necesidades
-            className="w-full h-64 object-cover mb-4 rounded-md"
+            width={500} // Agrega un ancho
+            height={400} // Agrega una altura, ajusta según tus necesidades
+            className="w-full h-50 object-cover mb-4 rounded-md"
           />
           <CardTitle className="text-3xl font-bold">
             {course.title}

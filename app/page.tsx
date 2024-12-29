@@ -28,8 +28,8 @@ export default function Home() {
                       src={typeof course.image === 'string' ? course.image : course.image.src}
                       alt={course.title}
                       width={600}
-                      height={200}
-                      className="w-full h-48 object-cover mb-4 rounded-md"
+                      height={500}
+                      className="w-full h-50 object-cover mb-4 rounded-md"
                     />
                     <CardTitle className="text-lg">{course.title}</CardTitle>
                   </CardHeader>

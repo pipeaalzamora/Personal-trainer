@@ -7,7 +7,7 @@ import { Instagram } from 'lucide-react'
 export default function TrainerProfile() {
   return (
     <Card className="mb-8 shadow-lg rounded-lg overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-900 p-4">
+      <CardHeader className="bg-gradient-to-r from-red-500 to-black p-4">
         <CardTitle className="text-3xl font-extrabold text-white">
           Conoce a tu Entrenador
         </CardTitle>
@@ -17,9 +17,9 @@ export default function TrainerProfile() {
         <Image
           src={perfil.src}
           alt="Foto del entrenador"
-          width={256}
-          height={256}
-          className="w-64 h-64 object-cover rounded-full mb-4 md:mb-0 md:mr-6 shadow-md"
+          width={300}
+          height={500}
+          className="w-50 h-50 object-cover rounded-full mb-4 md:mb-0 md:mr-5 shadow-md"
         />
          <Link 
             href="https://www.instagram.com/coach_inostroza10/" 
@@ -60,6 +60,8 @@ export default function TrainerProfile() {
               <li>Certificación en Entrenamiento Funcional.</li>
               <li>Certificación en Diseño del Plan del Entrenamiento.</li>
               <li>Certificación en Nutrición Básica.</li>
+              <li>Certificado de Entrenamiento fisico en poblaciones especiales</li>
+              <li>Certificado de gestión de proyectos en actividad física</li>
             </ul>
           </ul>
         </div>

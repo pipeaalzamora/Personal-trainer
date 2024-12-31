@@ -21,8 +21,8 @@ export default function Home() {
               .filter((course) => course.category === category)
               .slice(0, 4)
               .map((course) => (
-                <Card key={course.id} className="flex flex-col">
-                  <CardHeader>
+                <Card key={course.id} className="flex flex-col bg-gradient-to-b from-red-500 to-black">
+                  <CardHeader className=" text-white">
                     <Image
                       src={typeof course.image === 'string' ? course.image : course.image.src}
                       alt={course.title}
@@ -30,14 +30,14 @@ export default function Home() {
                       height={500}
                       className="w-full h-50 object-cover mb-4 rounded-md"
                     />
-                    <CardTitle className="text-lg">{course.title}</CardTitle>
+                    <CardTitle className="text-lg text-white">{course.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 mb-2">{course.description.substring(0, 100) + '...'}</p>
-                    <p className="font-semibold">Precio: ${course.price}</p>
-                    <p className="text-sm">Duración: {course.duration}</p>
+                    <p className="text-sm  mb-2 text-white">{course.description.substring(0, 100) + '...'}</p>
+                    <p className="font-semibold text-white">Precio: ${course.price}</p>
+                    <p className="text-sm text-white">Duración: {course.duration}</p>
                   </CardContent>
-                  <CardFooter className="mt-auto">
+                  <CardFooter className="mt-auto ">
                     <Link href={`/course/${course.id}`} passHref>
                       <Button className="w-full">Ver Detalles</Button>
                     </Link>

@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import bg from "@/public/bg.png"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -16,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-cover bg-center`} style={{ backgroundImage: `url(${bg.src})` }}>
         <nav className=" bg-gradient-to-r from-red-500 to-black text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
             <Link href="/" className="text-xl font-bold"></Link>

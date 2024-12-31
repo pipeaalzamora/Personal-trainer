@@ -10,10 +10,12 @@ export interface Course {
   category: string;
 }
 import ganancia1 from "@/public/ganancia1.jpg"
+import ganancia2 from "@/public/ganancia2.jpg"
 import ganancia3 from "@/public/ganancia3.jpg"
 import fuerza1 from "@/public/fuerza1.jpeg"
 import fuerza2 from "@/public/fuerza2.jpeg"
 import fuerza3 from "@/public/fuerza3.jpg"
+import perdida1 from "@/public/perdida1.jpg"
 import perdida2 from "@/public/perdida2.jpg"
 import perdida3 from "@/public/perdida3.jpg"
 import power1 from "@/public/power1.jpg"
@@ -39,7 +41,7 @@ export const courses: Course[] = [
       "En esta fase se implementarán ejercicios más avanzados y métodos de entrenamiento complejos que desafiarán tus músculos y acelerarán el crecimiento. La intensidad aumentará progresivamente para mejorar la hipertrofia y la fuerza muscular.",
     price: 20.00,
     duration: "4 semanas",
-    image: "/placeholder.svg?height=200&width=300",
+    image: ganancia2,
     category: "Ganancia Muscular",
   },
   {
@@ -59,7 +61,7 @@ export const courses: Course[] = [
       "En esta fase, iniciaremos el proceso con ejercicios funcionales y trabajo cardiovascular moderado, ayudando a tu cuerpo a adaptarse al régimen de entrenamiento y comenzando la quema de grasa de manera efectiva. Crearemos la base para resultados sostenibles.",
     price: 20.00,
     duration: "4 semanas",
-    image: "/placeholder.svg?height=200&width=300",
+    image: perdida1,
     category: "Pérdida de Grasa Corporal",
   },
   {

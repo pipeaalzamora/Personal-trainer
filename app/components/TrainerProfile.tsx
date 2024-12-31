@@ -19,7 +19,7 @@ export default function TrainerProfile() {
           alt="Foto del entrenador"
           width={300}
           height={500}
-          className="w-50 h-50 object-cover rounded-full mb-4 md:mb-0 md:mr-5 shadow-md"
+          className="w-50 h-50 object-cover rounded-full mb-4 md:mb-0 md:mr-5 shadow-md border-white border-4 hover:border-black"
         />
          <Link 
             href="https://www.instagram.com/coach_inostroza10/" 
@@ -55,13 +55,13 @@ export default function TrainerProfile() {
               <li>Preparador físico certificado.</li>
               <li>Certificación en Evaluación Antropométrica.</li>
               <li>Certificación en Evaluación de Test Físicos.</li>
-              <li>Especialización en Mejoramiento de las Condiciones Físicas del Alumno.</li>
               <li>Certificación en Ganancia Muscular y Fuerza.</li>
               <li>Certificación en Entrenamiento Funcional.</li>
               <li>Certificación en Diseño del Plan del Entrenamiento.</li>
               <li>Certificación en Nutrición Básica.</li>
               <li>Certificado de Entrenamiento fisico en poblaciones especiales</li>
               <li>Certificado de gestión de proyectos en actividad física</li>
+              <li>Especialización en Mejoramiento de las Condiciones Físicas del Alumno.</li>
             </ul>
           </ul>
         </div>

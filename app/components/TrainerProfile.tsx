@@ -12,7 +12,7 @@ export default function TrainerProfile() {
           Conoce a tu Entrenador
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col md:flex-row items-center p-6 bg-gray-50">
+      <CardContent className="flex flex-col md:flex-row items-center p-6  bg-gradient-to-r from-red-500 to-black">
       <div className="w-full md:w-1/3 mb-4 md:mb-0 md:mr-6">
         <Image
           src={perfil.src}
@@ -25,15 +25,15 @@ export default function TrainerProfile() {
             href="https://www.instagram.com/coach_inostroza10/" 
             target="_blank" 
             rel="noopener noreferrer" 
-            className="flex items-center justify-center mt-4 text-blue-600 hover:text-blue-800"
+            className="flex items-center justify-center mt-4 text-white hover:text-blue-800"
           >
             <Instagram className="w-5 h-5 mr-2" />
             <span>@coach_inostroza</span>
           </Link>
         </div>
-        <div className="text-gray-800">
+        <div className="text-white">
           <h3 className="text-2xl font-semibold mb-2">David Inostroza Devia</h3>
-          <p className="text-gray-700 mb-4">
+          <p className="mb-4">
             Soy David Inostroza Devia, preparador físico especializado en
             ganancia muscular, ganancia de fuerza y definición. Me apasiona
             acompañar a mis alumnos en su camino hacia el logro de sus

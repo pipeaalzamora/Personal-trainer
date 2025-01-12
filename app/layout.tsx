@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-
+import { Dumbbell } from 'lucide-react';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -17,10 +17,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-cover bg-center`}>
+      <body className={`${inter.className} bg-cover bg-center`} style={{ backgroundColor: '#486F73' }}>
         <nav className=" bg-gradient-to-r from-red-500 to-black text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
-            <Link href="/" className="text-xl font-bold"></Link>
+            <Link href="/" className="text-xl font-bold"><Dumbbell/></Link>
             <Link href="/cart" className="hover:underline">Carrito</Link>
           </div>
         </nav>

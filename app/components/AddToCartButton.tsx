@@ -1,5 +1,5 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Course } from '../../lib/courses'
 import { useToast } from "@/hooks/use-toast"
@@ -8,7 +8,7 @@ export default function AddToCartButton({ course }: { course: Course }) {
   const [isAdded, setIsAdded] = useState(false)
   const { toast } = useToast()
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // Obtener el carrito actual del localStorage
     const currentCart = JSON.parse(localStorage.getItem('cart') || '[]')
     
@@ -18,13 +18,27 @@ export default function AddToCartButton({ course }: { course: Course }) {
     // Guardar el carrito actualizado en localStorage
     localStorage.setItem('cart', JSON.stringify(updatedCart))
     
-    setIsAdded(true)
-    toast({
-      title: "Curso añadido al carrito",
-      description: `${course.title} ha sido añadido a tu carrito.`,
+    // Llamar al endpoint de Transbank
+    const response = await fetch('/api/transbank', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount: course.price, orderId: course.id }),
     })
-    
-    setTimeout(() => setIsAdded(false), 2000)
+
+    if (response.ok) {
+      setIsAdded(true)
+      toast({
+        title: "Curso añadido al carrito",
+        description: `${course.title} ha sido añadido a tu carrito.`,
+      })
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la transacción.",
+      })
+    }
   }
 
   return (

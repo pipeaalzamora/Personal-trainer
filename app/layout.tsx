@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-cover bg-center`} style={{ backgroundColor: '#486F73' }}>
+      <body className={`${inter.className} bg-cover bg-center`} style={{ backgroundColor: '#000033' }}>
         <nav className=" bg-gradient-to-r from-red-500 to-black text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
             <Link href="/" className="text-xl font-bold"><Dumbbell/></Link>

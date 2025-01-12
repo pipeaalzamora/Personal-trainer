@@ -36,7 +36,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-600 mb-4">{course.description}</p>
+          <p className="mb-4">{course.description}</p>
           <p className="font-semibold text-xl mb-2">
             Precio: ${course.price}
           </p>

@@ -21,7 +21,7 @@ import perdida3 from "@/public/perdida3.jpg"
 import power1 from "@/public/power1.jpg"
 import porwer2 from "@/public/power2.jpeg"
 import power3 from "@/public/power3.jpg"
-
+import packganancia from "@/public/packgananciamuscular.png"
 
 export const courses: Course[] = [
   {
@@ -56,6 +56,16 @@ export const courses: Course[] = [
   },
   {
     id: "4",
+    title: "Pack Completo: Ganancia Muscular",
+    description:
+      "Este es el paquete más completo y efectivo para quienes buscan transformar su cuerpo y maximizar la ganancia muscular. Incluye todas las fases del Plan 1: Ganancia Muscular (Iniciación, Progresión y Maestría) en un único programa integral.",
+    price: 50.00,
+    duration: "13 semanas",
+    image: packganancia,
+    category: "Ganancia Muscular",
+  },
+  {
+    id: "4",
     title: "Fase I: Preparación",
     description:
       "En esta fase, iniciaremos el proceso con ejercicios funcionales y trabajo cardiovascular moderado, ayudando a tu cuerpo a adaptarse al régimen de entrenamiento y comenzando la quema de grasa de manera efectiva. Crearemos la base para resultados sostenibles.",
@@ -70,7 +80,7 @@ export const courses: Course[] = [
     description:
       "En esta fase, se intensificarán las rutinas al combinar fuerza y cardio, lo que acelerará la quema de grasa mientras mantienes tu masa muscular. Con una dieta adecuada, construirás un cuerpo más tonificado y definido.",
     price: 20.00,
-    duration: "6 semanas",
+    duration: "4 semanas",
     image: perdida2,
     category: "Pérdida de Grasa Corporal",
   },
@@ -80,8 +90,18 @@ export const courses: Course[] = [
     description:
       "¡La fase definitiva! Aquí trabajaremos con entrenamientos de alta intensidad y técnicas avanzadas para maximizar la pérdida de grasa y definir tu cuerpo. Esta es la fase donde alcanzarás tus metas de definición total y mejor forma física. ¡Estás a punto de transformar tu cuerpo!",
     price: 20.00,
-    duration: "4 semanas",
+    duration: "5 semanas",
     image: perdida3,
+    category: "Pérdida de Grasa Corporal",
+  },
+  {
+    id: "1",
+    title: "Fase I: Iniciación",
+    description:
+      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
+    price: 20.00,
+    duration: "4 semanas",
+    image: ganancia1,
     category: "Pérdida de Grasa Corporal",
   },
   {
@@ -114,6 +134,16 @@ export const courses: Course[] = [
     category: "Ganancia de Fuerza",
   },
   {
+    id: "1",
+    title: "Fase I: Iniciación",
+    description:
+      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
+    price: 20.00,
+    duration: "4 semanas",
+    image: ganancia1,
+    category: "Ganancia de Fuerza",
+  },
+  {
     id: "10",
     title: "Fase I: Base",
     description:
@@ -140,6 +170,16 @@ export const courses: Course[] = [
     price: 25.00,
     duration: "5 semanas",
     image: power3,
+    category: "Powerlifting",
+  },
+  {
+    id: "1",
+    title: "Fase I: Iniciación",
+    description:
+      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
+    price: 20.00,
+    duration: "4 semanas",
+    image: ganancia1,
     category: "Powerlifting",
   },
 ];

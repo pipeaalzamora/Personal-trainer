@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
     const { buyOrder, sessionId, amount, returnUrl } = body;
     const response = await tx.create(buyOrder, sessionId, amount, returnUrl) as CreateTransactionResponse;
     return NextResponse.json(response);
-  } catch (error: any) {
-    console.error('Error creating transaction:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    console.error('Error capturing transaction:', error);
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

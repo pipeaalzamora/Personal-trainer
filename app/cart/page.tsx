@@ -1,11 +1,12 @@
 "use client"
-
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Course } from '../../lib/courses'
 import { useToast } from "@/hooks/use-toast"
+
+
 
 export default function CartPage() {
   const [email, setEmail] = useState('')
@@ -22,18 +23,51 @@ export default function CartPage() {
 
   const handleCheckout = async () => {
     setIsProcessing(true)
-    // Simular procesamiento de pago
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    // Simular envío de correo
-    console.log(`Correo enviado a ${email} con confirmación de compra`)
-    setIsProcessing(false)
-    localStorage.removeItem('cart')
-    setCart([])
-    toast({
-      title: "¡Compra realizada con éxito!",
-      description: "Se ha enviado un correo de confirmación.",
-    })
-  }
+    try {
+      const response = await fetch('/api/transbank/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: totalPrice,
+          email: email,
+          cart: cart,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error al crear la transacción:', errorData);
+        toast({
+          title: "Error al procesar el pago",
+          description: errorData.message || "Hubo un problema al procesar tu pago.",
+          variant: "destructive",
+        });
+        setIsProcessing(false);
+        return;
+      }
+
+      const { url, token } = await response.json();
+      window.location.href = url;
+      localStorage.setItem('transbank_token', token);
+
+    } catch (error) {
+      console.error('Error inesperado:', error);
+      toast({
+        title: "Error inesperado",
+        description: "Hubo un error inesperado al procesar tu pago.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
+
+  const removeFromCart = (courseId: number) => {
+    const updatedCart = cart.filter(course => Number(course.id) !== courseId);
+    setCart(updatedCart);
+    localStorage.setItem('cart', JSON.stringify(updatedCart));
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -50,6 +84,13 @@ export default function CartPage() {
                 <div key={course.id} className="flex justify-between items-center mb-4">
                   <span>{course.title}</span>
                   <span>${course.price.toFixed(2)}</span>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeFromCart(Number(course.id))}
+                  >
+                    Eliminar
+                  </Button>
                 </div>
               ))}
               <div className="border-t pt-4 mt-4">
@@ -78,4 +119,3 @@ export default function CartPage() {
     </div>
   )
 }
-

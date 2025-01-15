@@ -12,6 +12,15 @@ export default function AddToCartButton({ course }: { course: Course }) {
     // Obtener el carrito actual del localStorage
     const currentCart = JSON.parse(localStorage.getItem('cart') || '[]')
     
+    // Verificar si el curso ya está en el carrito
+    if (currentCart.some((item: Course) => item.id === course.id)) {
+      toast({
+        title: "Curso ya en el carrito",
+        description: `${course.title} ya está en tu carrito.`,
+      });
+      return;
+    }
+    
     // Agregar el curso al carrito
     const updatedCart = [...currentCart, course]
     
@@ -51,4 +60,3 @@ export default function AddToCartButton({ course }: { course: Course }) {
     </Button>
   )
 }
-

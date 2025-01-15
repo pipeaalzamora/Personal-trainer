@@ -12,8 +12,10 @@ export async function POST(req: NextRequest) {
     const { token, childCommerceCode, buyOrder, authorizationCode, captureAmount } = body;
     const response = await mallTx.capture(token, childCommerceCode, buyOrder, authorizationCode, captureAmount) as CaptureTransactionResponse;
     return NextResponse.json(response);
-  } catch (error: any) {
-    console.error('Error capturing transaction:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+   // ... código existente ...
+} catch (error: unknown) {
+  console.error('Error capturing transaction:', error);
+  return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+}
+// ... código existente ...
 }

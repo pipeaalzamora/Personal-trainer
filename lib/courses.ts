@@ -21,7 +21,11 @@ import perdida3 from "@/public/perdida3.jpg"
 import power1 from "@/public/power1.jpg"
 import porwer2 from "@/public/power2.jpeg"
 import power3 from "@/public/power3.jpg"
-import packganancia from "@/public/packgananciamuscular.png"
+import packfuerza from "@/public/Pack ganancia de fuerza.jpg"
+import packmuscular from "@/public/Pack ganancia muscular.png"
+import packgrasa from "@/public/pack perdida de grasa corporal.jpg"
+import packpower from "@/public/Pack powerlifting.jpeg"
+
 
 export const courses: Course[] = [
   {
@@ -61,11 +65,11 @@ export const courses: Course[] = [
       "Este es el paquete más completo y efectivo para quienes buscan transformar su cuerpo y maximizar la ganancia muscular. Incluye todas las fases del Plan 1: Ganancia Muscular (Iniciación, Progresión y Maestría) en un único programa integral.",
     price: 50.00,
     duration: "13 semanas",
-    image: packganancia,
+    image: packmuscular, //Se corrigió la imagen aquí
     category: "Ganancia Muscular",
   },
   {
-    id: "4",
+    id: "5",
     title: "Fase I: Preparación",
     description:
       "En esta fase, iniciaremos el proceso con ejercicios funcionales y trabajo cardiovascular moderado, ayudando a tu cuerpo a adaptarse al régimen de entrenamiento y comenzando la quema de grasa de manera efectiva. Crearemos la base para resultados sostenibles.",
@@ -75,7 +79,7 @@ export const courses: Course[] = [
     category: "Pérdida de Grasa Corporal",
   },
   {
-    id: "5",
+    id: "6",
     title: "Fase II: Construcción",
     description:
       "En esta fase, se intensificarán las rutinas al combinar fuerza y cardio, lo que acelerará la quema de grasa mientras mantienes tu masa muscular. Con una dieta adecuada, construirás un cuerpo más tonificado y definido.",
@@ -85,7 +89,7 @@ export const courses: Course[] = [
     category: "Pérdida de Grasa Corporal",
   },
   {
-    id: "6",
+    id: "7",
     title: "Fase III: Potenciación",
     description:
       "¡La fase definitiva! Aquí trabajaremos con entrenamientos de alta intensidad y técnicas avanzadas para maximizar la pérdida de grasa y definir tu cuerpo. Esta es la fase donde alcanzarás tus metas de definición total y mejor forma física. ¡Estás a punto de transformar tu cuerpo!",
@@ -95,17 +99,17 @@ export const courses: Course[] = [
     category: "Pérdida de Grasa Corporal",
   },
   {
-    id: "1",
-    title: "Fase I: Iniciación",
+    id: "8",
+    title: "Pack Completo: Pérdida de Grasa Corporal",
     description:
-      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
-    price: 20.00,
-    duration: "4 semanas",
-    image: ganancia1,
+      "Este es el programa definitivo para reducir grasa corporal mientras mantienes y defines tu musculatura. Incluye todas las fases del Plan 2: Pérdida de Grasa Corporal (Preparación, Construcción y Potenciación) en un único paquete diseñado para resultados duraderos.",
+    price: 50.00,
+    duration: "13 semanas",
+    image:packgrasa,
     category: "Pérdida de Grasa Corporal",
   },
   {
-    id: "7",
+    id: "9",
     title: "Fase I: Despegue",
     description:
       "En esta fase sentarás las bases para ganar fuerza con ejercicios fundamentales que mejorarán tu técnica y preparación general. Se enfocará en mejorar la eficiencia de los movimientos básicos y desarrollar fuerza funcional.",
@@ -115,7 +119,7 @@ export const courses: Course[] = [
     category: "Ganancia de Fuerza",
   },
   {
-    id: "8",
+    id: "10",
     title: "Fase II: Impulso",
     description: "Ahora comenzamos a intensificar el trabajo con cargas progresivas y variaciones de ejercicios más desafiantes para seguir incrementando tu fuerza. En esta fase, mejorarás tu rendimiento en los principales levantamientos como sentadillas, peso muerto y press de banca.",
     price: 20.00,
@@ -124,7 +128,7 @@ export const courses: Course[] = [
     category: "Ganancia de Fuerza",
   },
   {
-    id: "9",
+    id: "11",
     title: "Fase III: Dominio",
     description:
       "La fase de máxima intensidad y técnica refinada. Aquí, aplicarás lo aprendido para romper tus récords personales, enfrentando cargas mucho más altas y utilizando métodos avanzados de entrenamiento. ¡Prepárate para dominar tus levantamientos y elevar tu fuerza a niveles impresionantes!",
@@ -134,17 +138,17 @@ export const courses: Course[] = [
     category: "Ganancia de Fuerza",
   },
   {
-    id: "1",
-    title: "Fase I: Iniciación",
+    id: "12",
+    title: "Pack Completo: Ganancia de Fuerza",
     description:
-      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
-    price: 20.00,
-    duration: "4 semanas",
-    image: ganancia1,
+      "Este pack está diseñado para quienes desean llevar su fuerza al siguiente nivel. Incluye todas las fases del Plan 3: Ganancia de Fuerza (Despegue, Impulso y Dominio), combinando técnica, progresión y máxima intensidad para lograr resultados increíbles.",
+    price: 50.00,
+    duration: "13 semanas",
+    image: packfuerza,
     category: "Ganancia de Fuerza",
   },
   {
-    id: "10",
+    id: "13",
     title: "Fase I: Base",
     description:
       "En esta fase, estableceremos una base sólida para los tres levantamientos clave: sentadilla, press de banca y peso muerto. Te enfocarás en la técnica adecuada, fuerza general y movilidad para preparar tu cuerpo para cargas más pesadas.",
@@ -154,7 +158,7 @@ export const courses: Course[] = [
     category: "Powerlifting",
   },
   {
-    id: "11",
+    id: "14",
     title: "Fase II: Crecimiento",
     description: "Ahora que tienes la base, comenzaremos a aumentar las cargas progresivamente y a perfeccionar tu técnica. Trabajaremos en mejorar la eficiencia de tus levantamientos y en aumentar la fuerza para maximizar tu rendimiento en cada uno de ellos.",
     price: 20.00,
@@ -163,7 +167,7 @@ export const courses: Course[] = [
     category: "Powerlifting",
   },
   {
-    id: "12",
+    id: "15",
     title: "Fase III: Élite",
     description:
       "Esta fase es para aquellos que quieren convertirse en auténticos campeones del powerlifting. Trabajarás en levantar tus máximos históricos con métodos avanzados, periodización y estrategias específicas para competencias. ¡Es hora de alcanzar el nivel de élite y dominar los levantamientos!",
@@ -173,13 +177,14 @@ export const courses: Course[] = [
     category: "Powerlifting",
   },
   {
-    id: "1",
-    title: "Fase I: Iniciación",
+    id: "16",
+    title: "Pack Completo: Powerlifting)",
     description:
-      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
-    price: 20.00,
-    duration: "4 semanas",
-    image: ganancia1,
+      "Este pack está diseñado para quienes buscan dominar el powerlifting y mejorar su rendimiento en los tres levantamientos principales: sentadilla, press de banca y peso muerto. Incluye todas las fases del Plan 4: Powerlifting (Base, Crecimiento y Élite), ofreciendo una preparación completa desde la técnica inicial hasta el nivel competitivo.",
+    price: 50.00,
+    duration: "13 semanas",
+    image: packpower,
     category: "Powerlifting",
   },
 ];
+

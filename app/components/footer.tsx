@@ -7,7 +7,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <h3 className="font-bold text-lg mb-4">CoachInostroza</h3>
-            <p className="text-sm font-bold uppercase tracking-wide">"Entrena inteligente, domina tu técnica, evita lesiones."</p>
+            <p className="text-sm font-bold uppercase tracking-wide">'Entrena inteligente, domina tu técnica, evita lesiones.'</p>
           </div>
           <div>
             <h4 className="font-semibold text-md mb-4">Contacto</h4>

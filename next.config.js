@@ -14,7 +14,8 @@ const nextConfig = {
   experimental: {
     // Permitir errores en rutas específicas durante la compilación estática
     workerThreads: false,
-    cpus: 1
+    cpus: 1,
+    outputFileTracingRoot: process.cwd(),
   },
   // Ignorar errores durante la exportación estática
   onDemandEntries: {

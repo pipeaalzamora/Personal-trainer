@@ -1,0 +1,96 @@
+{
+  "pages": {
+    "/_not-found/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/app/_not-found/page-c8219ab21dbb5ed7.js"
+    ],
+    "/layout": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/css/6f59fc372664f95c.css",
+      "static/chunks/972-d489e0ac9a22a7d5.js",
+      "static/chunks/app/layout-f8b25063491dfea7.js"
+    ],
+    "/admin/courses/materials/[courseId]/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/app/admin/courses/materials/[courseId]/page-8f2df50009e94c12.js"
+    ],
+    "/admin/transbank/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/741-51f406af61ae69ad.js",
+      "static/chunks/app/admin/transbank/page-ca0181139abcf5a7.js"
+    ],
+    "/cart/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/app/cart/page-2ca55a2ef26e2e41.js"
+    ],
+    "/course/[id]/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/878-a67ed11fb4efe122.js",
+      "static/chunks/app/course/[id]/page-a81ac9db3f84c0ac.js"
+    ],
+    "/my-courses/[courseId]/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/app/my-courses/[courseId]/page-5d522332839e7d4f.js"
+    ],
+    "/my-courses/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/878-a67ed11fb4efe122.js",
+      "static/chunks/app/my-courses/page-ef26a2ba959281a7.js"
+    ],
+    "/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/878-a67ed11fb4efe122.js",
+      "static/chunks/972-d489e0ac9a22a7d5.js",
+      "static/chunks/app/page-2bae79fec60df5e3.js"
+    ],
+    "/payment/status/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/app/payment/status/page-3801241ddbd69fb6.js"
+    ],
+    "/verify-email/page": [
+      "static/chunks/webpack-41a9ee0a1d65a3d2.js",
+      "static/chunks/fd9d1056-9e191f0896c1d560.js",
+      "static/chunks/117-e2d6c046bbac40e9.js",
+      "static/chunks/main-app-f90d852414aed34d.js",
+      "static/chunks/50-b2ba53645240cbbf.js",
+      "static/chunks/app/verify-email/page-e3c6ad280b87073e.js"
+    ]
+  }
+}

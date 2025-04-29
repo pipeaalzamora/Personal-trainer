@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { generateDownloadUrl } from '@/lib/s3';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(
   req: NextRequest,
@@ -9,27 +8,35 @@ export async function GET(
   try {
     const id = params.id;
     
-    // Buscar el material en la base de datos
-    const material = await prisma.courseMaterial.findUnique({
-      where: { id }
-    });
+    // Buscar el archivo en la base de datos
+    const { data: file, error: fetchError } = await supabase
+      .from('files')
+      .select('path, name')
+      .eq('id', id)
+      .single();
     
-    if (!material) {
+    if (fetchError || !file) {
       return NextResponse.json(
-        { error: 'Material no encontrado' },
+        { error: 'Archivo no encontrado' },
         { status: 404 }
       );
     }
     
-    // Generar URL de descarga
-    const downloadUrl = await generateDownloadUrl(material.fileUrl);
+    // Generar URL de descarga firmada (válida por 60 minutos)
+    const { data: signedUrl, error: signedUrlError } = await supabase.storage
+      .from('course-files')
+      .createSignedUrl(file.path, 60 * 60);
+    
+    if (signedUrlError) {
+      throw new Error(`Error al generar URL de descarga: ${signedUrlError.message}`);
+    }
     
     // Redirigir al usuario a la URL de descarga
-    return NextResponse.redirect(downloadUrl);
-  } catch (error: unknown) {
+    return NextResponse.redirect(signedUrl.signedUrl);
+  } catch (error) {
     console.error('Error generando URL de descarga:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al generar URL de descarga' }, 
+      { error: error instanceof Error ? error.message : 'Error al generar URL de descarga' }, 
       { status: 500 }
     );
   }

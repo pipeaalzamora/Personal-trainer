@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import { getUserByEmail } from '@/lib/supabase-api';
+import { supabase } from '@/lib/supabase';
 
 // En una aplicación real, necesitarías implementar autenticación
 // Este endpoint simplificado verifica si el email almacenado en cookies
@@ -31,9 +32,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Buscar el usuario por email
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail }
-    });
+    const user = await getUserByEmail(userEmail);
     
     if (!user) {
       return NextResponse.json(
@@ -43,19 +42,25 @@ export async function GET(req: NextRequest) {
     }
     
     // Verificar si el usuario ha comprado el curso
-    const order = await prisma.order.findFirst({
-      where: {
-        userId: user.id,
-        status: 'COMPLETED',
-        items: {
-          some: {
-            courseId
-          }
-        }
-      }
-    });
+    const { data: orderItems, error } = await supabase
+      .from('order_items')
+      .select(`
+        id,
+        order:orders!inner(
+          id,
+          user_id,
+          status
+        )
+      `)
+      .eq('course_id', courseId)
+      .eq('order.user_id', user.id)
+      .eq('order.status', 'COMPLETED');
+      
+    if (error) {
+      throw new Error(`Error al verificar acceso: ${error.message}`);
+    }
     
-    if (!order) {
+    if (!orderItems || orderItems.length === 0) {
       return NextResponse.json(
         { error: 'No has comprado este curso' }, 
         { status: 403 }
@@ -66,10 +71,10 @@ export async function GET(req: NextRequest) {
       success: true,
       message: 'Tienes acceso a este curso' 
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error verificando acceso:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al verificar acceso' }, 
+      { error: error instanceof Error ? error.message : 'Error al verificar acceso' }, 
       { status: 500 }
     );
   }

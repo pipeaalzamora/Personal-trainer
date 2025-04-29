@@ -1,47 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { verifyUser } from '@/lib/supabase-api';
 
-export async function POST(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await req.json();
-    const { token } = body;
-    
+    // Extraer el token de verificación de la URL
+    const searchParams = new URL(request.url).searchParams;
+    const token = searchParams.get('token');
+
     if (!token) {
       return NextResponse.json(
-        { error: 'El token de verificación es requerido' }, 
+        { error: 'Token de verificación no proporcionado' },
         { status: 400 }
       );
     }
-    
-    // Buscar el usuario con el token proporcionado
-    const user = await prisma.user.findFirst({
-      where: { verificationToken: token }
-    });
-    
-    if (!user) {
+
+    // Verificar el usuario con el token proporcionado
+    const success = await verifyUser(token);
+
+    if (!success) {
       return NextResponse.json(
-        { error: 'Token de verificación inválido' },
-        { status: 404 }
+        { error: 'Token de verificación inválido o expirado' },
+        { status: 400 }
       );
     }
+
+    // Redirigir al usuario a una página de éxito
+    return NextResponse.redirect(new URL('/verify-success', request.url));
+  } catch (error) {
+    console.error('Error al verificar email:', error);
     
-    // Verificar el usuario
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verified: true,
-        verificationToken: null
-      }
-    });
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Correo electrónico verificado correctamente' 
-    });
-  } catch (error: unknown) {
-    console.error('Error verificando correo:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al verificar el correo electrónico' }, 
+      { error: 'Ocurrió un error al verificar tu correo electrónico' },
       { status: 500 }
     );
   }

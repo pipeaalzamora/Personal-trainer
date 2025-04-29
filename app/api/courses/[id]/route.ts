@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { getCourseById } from '@/lib/supabase-api';
 
 export async function GET(
   req: NextRequest,
@@ -9,9 +9,7 @@ export async function GET(
     const id = params.id;
     
     // Obtener el curso por su ID
-    const course = await prisma.course.findUnique({
-      where: { id }
-    });
+    const course = await getCourseById(id);
     
     if (!course) {
       return NextResponse.json(
@@ -21,10 +19,10 @@ export async function GET(
     }
     
     return NextResponse.json(course);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error obteniendo curso:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al obtener el curso' }, 
+      { error: error instanceof Error ? error.message : 'Error al obtener el curso' }, 
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
+import { getUserByEmail, getUserOrders, getOrderItems } from '@/lib/supabase-api';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,9 +18,7 @@ export async function GET(req: NextRequest) {
     }
     
     // Buscar el usuario por email
-    const user = await prisma.user.findUnique({
-      where: { email: userEmail }
-    });
+    const user = await getUserByEmail(userEmail);
     
     if (!user) {
       return NextResponse.json(
@@ -28,33 +27,34 @@ export async function GET(req: NextRequest) {
       );
     }
     
-    // Obtener los cursos comprados por el usuario
-    const purchasedCourses = await prisma.course.findMany({
-      where: {
-        orderItems: {
-          some: {
-            order: {
-              userId: user.id,
-              status: 'COMPLETED'
-            }
-          }
+    // Obtener las órdenes completadas del usuario
+    const userOrders = await getUserOrders(user.id);
+    const completedOrders = userOrders.filter(order => order.status === 'COMPLETED');
+    
+    if (completedOrders.length === 0) {
+      return NextResponse.json([]);
+    }
+    
+    // Obtener los cursos únicos de todas las órdenes completadas
+    const purchasedCourseIds = new Set<string>();
+    let purchasedCourses = [];
+    
+    for (const order of completedOrders) {
+      const orderItems = await getOrderItems(order.id);
+      
+      for (const item of orderItems) {
+        if (!purchasedCourseIds.has(item.course_id)) {
+          purchasedCourseIds.add(item.course_id);
+          purchasedCourses.push(item.course);
         }
-      },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        price: true,
-        category: true,
-        image: true
       }
-    });
+    }
     
     return NextResponse.json(purchasedCourses);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error obteniendo cursos:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al obtener los cursos' }, 
+      { error: error instanceof Error ? error.message : 'Error al obtener los cursos' }, 
       { status: 500 }
     );
   }

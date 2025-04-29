@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { deleteFile } from '@/lib/s3';
+import { deleteCourseFile } from '@/lib/supabase-api';
 
 export async function DELETE(
   req: NextRequest,
@@ -9,34 +8,17 @@ export async function DELETE(
   try {
     const id = params.id;
     
-    // Buscar el material en la base de datos
-    const material = await prisma.courseMaterial.findUnique({
-      where: { id }
-    });
-    
-    if (!material) {
-      return NextResponse.json(
-        { error: 'Material no encontrado' },
-        { status: 404 }
-      );
-    }
-    
-    // Eliminar el archivo de S3
-    await deleteFile(material.fileUrl);
-    
-    // Eliminar el material de la base de datos
-    await prisma.courseMaterial.delete({
-      where: { id }
-    });
+    // Eliminar el archivo de Supabase Storage y su registro en la base de datos
+    await deleteCourseFile(id);
     
     return NextResponse.json({ 
       success: true,
       message: 'Material eliminado correctamente' 
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error eliminando material:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al eliminar el material' }, 
+      { error: error instanceof Error ? error.message : 'Error al eliminar el material' }, 
       { status: 500 }
     );
   }

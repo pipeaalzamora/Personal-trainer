@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCourseMaterialPath, generateUploadUrl } from '@/lib/s3';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,17 +13,27 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Generar la ruta del archivo en S3
-    const key = generateCourseMaterialPath(courseId, fileName);
+    // Generar un nombre único para el archivo
+    const uniqueFileName = `courses/${courseId}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9\.-]/g, '_')}`;
     
     // Generar URL prefirmada para subir el archivo
-    const uploadUrl = await generateUploadUrl(key, contentType);
+    const { data, error } = await supabase.storage
+      .from('course-files')
+      .createSignedUploadUrl(uniqueFileName);
     
-    return NextResponse.json({ uploadUrl, key });
-  } catch (error: unknown) {
+    if (error) {
+      throw new Error(`Error al generar URL de carga: ${error.message}`);
+    }
+    
+    return NextResponse.json({
+      uploadUrl: data.signedUrl,
+      path: uniqueFileName,
+      token: data.token
+    });
+  } catch (error) {
     console.error('Error generando URL de carga:', error);
     return NextResponse.json(
-      { error: (error as Error).message || 'Error al generar URL de carga' }, 
+      { error: error instanceof Error ? error.message : 'Error al generar URL de carga' }, 
       { status: 500 }
     );
   }

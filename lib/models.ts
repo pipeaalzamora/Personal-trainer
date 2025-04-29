@@ -1,38 +1,38 @@
-// Definición de tipos para las tablas de Supabase
+import type { Database } from '@/types/supabase';
 
-export interface User {
-  id: string;
-  email: string;
-  created_at: string;
-  name?: string;
-}
+// Re-exportar los tipos de Supabase con nombres más convenientes
+export type Course = Database['public']['Tables']['courses']['Row'];
+export type CourseInsert = Database['public']['Tables']['courses']['Insert'];
+export type CourseUpdate = Database['public']['Tables']['courses']['Update'];
 
-export interface Course {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  image_url?: string;
-  created_at: string;
-  updated_at: string;
-}
+export type User = Database['public']['Tables']['users']['Row'];
+export type UserInsert = Database['public']['Tables']['users']['Insert'];
+export type UserUpdate = Database['public']['Tables']['users']['Update'];
 
-export interface Purchase {
-  id: number;
-  user_id: string;
-  course_id: number;
-  amount: number;
-  payment_status: 'pending' | 'completed' | 'failed';
-  transaction_id?: string;
-  created_at: string;
-}
+export type Order = Database['public']['Tables']['orders']['Row'];
+export type OrderInsert = Database['public']['Tables']['orders']['Insert'];
+export type OrderUpdate = Database['public']['Tables']['orders']['Update'];
 
-export interface CourseFile {
-  id: number;
-  course_id: number;
-  name: string;
-  url: string;
-  type: string;
-  size: number;
-  created_at: string;
-} 
+export type OrderItem = Database['public']['Tables']['order_items']['Row'];
+export type OrderItemInsert = Database['public']['Tables']['order_items']['Insert'];
+export type OrderItemUpdate = Database['public']['Tables']['order_items']['Update'];
+
+export type FileRecord = Database['public']['Tables']['files']['Row'];
+export type FileInsert = Database['public']['Tables']['files']['Insert'];
+export type FileUpdate = Database['public']['Tables']['files']['Update'];
+
+// Tipos para estados
+export type OrderStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+
+// Tipos para respuestas de API
+export type CourseWithFiles = Course & {
+  files: FileRecord[];
+};
+
+export type OrderWithItems = Order & {
+  items: (OrderItem & { course: Course })[];
+};
+
+export type UserWithOrders = User & {
+  orders: Order[];
+}; 

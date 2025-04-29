@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { courses } from '../lib/courses'
+import { courses, Course } from '../lib/courses'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import TrainerProfile from './components/TrainerProfile'
@@ -14,24 +14,37 @@ export default function Home() {
   const femaleCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal']
   
   const [categories, setCategories] = useState<string[]>(allCategories)
+  const [isFemale, setIsFemale] = useState<boolean>(false)
   
   // Configurar las categorías iniciales basadas en localStorage al cargar
   useEffect(() => {
     const storedGender = localStorage.getItem('selectedGender');
     if (storedGender === 'female') {
       setCategories(femaleCategories);
+      setIsFemale(true);
     } else {
       setCategories(allCategories);
+      setIsFemale(false);
     }
   }, []);
 
   const handleGenderSelect = (gender: 'male' | 'female') => {
     if (gender === 'male') {
       setCategories(allCategories)
+      setIsFemale(false);
     } else {
       setCategories(femaleCategories)
+      setIsFemale(true);
     }
   }
+
+  // Función para obtener la imagen correcta según el género
+  const getCorrectImage = (course: Course) => {
+    if (isFemale && course.imageFemale) {
+      return typeof course.imageFemale === 'string' ? course.imageFemale : course.imageFemale.src;
+    }
+    return typeof course.image === 'string' ? course.image : course.image.src;
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -50,7 +63,7 @@ export default function Home() {
                 <Card key={course.id} className="flex flex-col bg-gradient-to-b from-red-500 to-black">
                   <CardHeader className=" text-white">
                     <Image
-                      src={typeof course.image === 'string' ? course.image : course.image.src}
+                      src={getCorrectImage(course)}
                       alt={course.title}
                       width={600}
                       height={500}

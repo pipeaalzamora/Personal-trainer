@@ -7,6 +7,7 @@ export interface Course {
   price: number;
   duration: string;
   image: string | StaticImageData;
+  imageFemale?: string | StaticImageData;
   category: string;
 }
 import ganancia1 from "@/public/ganancia1.jpg"
@@ -26,6 +27,15 @@ import packmuscular from "@/public/Pack ganancia muscular.png"
 import packgrasa from "@/public/pack perdida de grasa corporal.jpg"
 import packpower from "@/public/Pack powerlifting.jpeg"
 
+import gananciaM1 from "@/public/Ganancia mujeres 1.jpg"
+import gananciaM2 from "@/public/Ganancia mujeres 2.jpg"
+import gananciaM3 from "@/public/Ganancia mujeres 3.jpg"
+import gananciaM4 from "@/public/Ganancia Mujeres 4.jpg"
+import perdidaM1 from "@/public/Perdida mujeres 1.jpg"
+import perdidaM2 from "@/public/Perdida mujeres 2.jpg"
+import perdidaM3 from "@/public/Perdida mujeres 3.jpg"
+import perdidaM4 from "@/public/Perdida mujeres 4.jpg"
+
 
 export const courses: Course[] = [
   {
@@ -36,6 +46,7 @@ export const courses: Course[] = [
     price: 20.00,
     duration: "4 semanas",
     image: ganancia1,
+    imageFemale: gananciaM1,
     category: "Ganancia Muscular",
   },
   {
@@ -46,6 +57,7 @@ export const courses: Course[] = [
     price: 20.00,
     duration: "4 semanas",
     image: ganancia2,
+    imageFemale: gananciaM2,
     category: "Ganancia Muscular",
   },
   {
@@ -56,6 +68,7 @@ export const courses: Course[] = [
     price: 25.00,
     duration: "5 semanas",
     image: ganancia3,
+    imageFemale: gananciaM3,
     category: "Ganancia Muscular",
   },
   {
@@ -65,7 +78,8 @@ export const courses: Course[] = [
       "Este es el paquete más completo y efectivo para quienes buscan transformar su cuerpo y maximizar la ganancia muscular. Incluye todas las fases del Plan 1: Ganancia Muscular (Iniciación, Progresión y Maestría) en un único programa integral.",
     price: 50.00,
     duration: "13 semanas",
-    image: packmuscular, //Se corrigió la imagen aquí
+    image: packmuscular,
+    imageFemale: gananciaM4,
     category: "Ganancia Muscular",
   },
   {
@@ -76,6 +90,7 @@ export const courses: Course[] = [
     price: 20.00,
     duration: "4 semanas",
     image: perdida1,
+    imageFemale: perdidaM1,
     category: "Pérdida de Grasa Corporal",
   },
   {
@@ -86,6 +101,7 @@ export const courses: Course[] = [
     price: 20.00,
     duration: "4 semanas",
     image: perdida2,
+    imageFemale: perdidaM2,
     category: "Pérdida de Grasa Corporal",
   },
   {
@@ -96,6 +112,7 @@ export const courses: Course[] = [
     price: 25.00,
     duration: "5 semanas",
     image: perdida3,
+    imageFemale: perdidaM3,
     category: "Pérdida de Grasa Corporal",
   },
   {
@@ -105,7 +122,8 @@ export const courses: Course[] = [
       "Este es el programa definitivo para reducir grasa corporal mientras mantienes y defines tu musculatura. Incluye todas las fases del Plan 2: Pérdida de Grasa Corporal (Preparación, Construcción y Potenciación) en un único paquete diseñado para resultados duraderos.",
     price: 50.00,
     duration: "13 semanas",
-    image:packgrasa,
+    image: packgrasa,
+    imageFemale: perdidaM4,
     category: "Pérdida de Grasa Corporal",
   },
   {

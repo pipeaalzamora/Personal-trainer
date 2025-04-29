@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { Dumbbell, CreditCard, BookOpen, ShoppingCart } from 'lucide-react';
+import { Dumbbell, ShoppingCart } from 'lucide-react';
 import Footer from '@/app/components/footer';
 import { CartProvider } from '@/hooks/useCart'
 import CartIcon from '@/app/components/CartIcon';
@@ -28,14 +28,6 @@ export default function RootLayout({
               CoachInostroza
             </Link>
             <div className="flex gap-4">
-              <Link href="/my-courses" className="hover:underline flex items-center gap-1">
-                <BookOpen className="h-4 w-4" />
-                <span>Mis Cursos</span>
-              </Link>
-              <Link href="/admin/transbank" className="hover:underline flex items-center gap-1">
-                <CreditCard className="h-4 w-4" />
-                <span>Configurar Transbank</span>
-              </Link>
                 <CartIcon />
             </div>
           </div>

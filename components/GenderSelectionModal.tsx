@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
 
 interface GenderSelectionModalProps {
   onGenderSelect: (gender: 'male' | 'female') => void;
@@ -13,18 +14,27 @@ interface GenderSelectionModalProps {
 export default function GenderSelectionModal({ onGenderSelect }: GenderSelectionModalProps) {
   const [open, setOpen] = useState(false);
   const [selectedGender, setSelectedGender] = useState<'male' | 'female' | null>(null);
+  const pathname = usePathname();
 
-  // Mostrar el modal cuando el componente se monta
   useEffect(() => {
-    // Mostrar el modal siempre que se cargue la página
-    setOpen(true);
-    
-    // Recuperar la última selección para preseleccionarla en el modal
+    // Recuperar el género almacenado
     const storedGender = localStorage.getItem('selectedGender');
     if (storedGender) {
       setSelectedGender(storedGender as 'male' | 'female');
     }
-  }, []);
+
+    // Verificar si es una navegación o una recarga
+    const lastPath = sessionStorage.getItem('lastPath');
+    const isNewNavigation = lastPath !== pathname;
+    
+    // Actualizar la ruta actual en el sessionStorage
+    sessionStorage.setItem('lastPath', pathname);
+    
+    // Mostrar el modal solo si es una navegación nueva (no una recarga)
+    if (isNewNavigation) {
+      setOpen(true);
+    }
+  }, [pathname]);
 
   const handleGenderSelect = () => {
     if (selectedGender) {

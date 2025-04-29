@@ -1,16 +1,42 @@
+"use client"
+
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { courses } from '../lib/courses'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import TrainerProfile from './components/TrainerProfile'
 import Image from 'next/image'
+import GenderSelectionModal from '@/components/GenderSelectionModal'
 
 export default function Home() {
-  const categories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal', 'Ganancia de Fuerza', 'Powerlifting']
+  const allCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal', 'Ganancia de Fuerza', 'Powerlifting']
+  const femaleCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal']
+  
+  const [categories, setCategories] = useState<string[]>(allCategories)
+  
+  // Configurar las categorías iniciales basadas en localStorage al cargar
+  useEffect(() => {
+    const storedGender = localStorage.getItem('selectedGender');
+    if (storedGender === 'female') {
+      setCategories(femaleCategories);
+    } else {
+      setCategories(allCategories);
+    }
+  }, []);
+
+  const handleGenderSelect = (gender: 'male' | 'female') => {
+    if (gender === 'male') {
+      setCategories(allCategories)
+    } else {
+      setCategories(femaleCategories)
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-           
+      <GenderSelectionModal onGenderSelect={handleGenderSelect} />
+      
       <TrainerProfile />
 
       {categories.map((category) => (

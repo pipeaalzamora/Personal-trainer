@@ -1,12 +1,13 @@
 "use client"
-import { useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Check, AlertTriangle } from "lucide-react"
 
-export default function VerifyEmailPage() {
+// Componente que usa useSearchParams
+function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
@@ -110,5 +111,14 @@ export default function VerifyEmailPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+// Página principal con Suspense
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   )
 } 

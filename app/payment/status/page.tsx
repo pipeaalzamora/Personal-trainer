@@ -1,4 +1,5 @@
 "use client"
+import React, { Suspense } from 'react'
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -6,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { Check, X } from "lucide-react"
 
-export default function PaymentStatusPage() {
+// Componente que usa useSearchParams
+function PaymentStatusContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { toast } = useToast()
@@ -131,5 +133,14 @@ export default function PaymentStatusPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+// Página principal con Suspense
+export default function PaymentStatusPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <PaymentStatusContent />
+    </Suspense>
   )
 } 

@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { getUserByEmail } from '@/lib/supabase-api';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // En una aplicación real, necesitarías implementar autenticación
 // Este endpoint simplificado verifica si el email almacenado en cookies
 // ha comprado el curso solicitado

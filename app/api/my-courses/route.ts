@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { getUserByEmail, getUserOrders, getOrderItems } from '@/lib/supabase-api';
 import { supabase } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     // En una implementación real, obtendrías el usuario de la sesión autenticada

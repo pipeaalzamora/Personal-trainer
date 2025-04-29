@@ -26,7 +26,6 @@ const nextConfig = {
   },
   // Configurar rutas que deben ser dinámicas (solo se renderizan en el lado del cliente)
   output: 'standalone',
-  distDir: process.env.NODE_ENV === 'production' ? '.next-prod' : '.next'
 }
 
 module.exports = nextConfig 

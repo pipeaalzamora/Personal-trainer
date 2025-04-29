@@ -5,6 +5,9 @@ import { CommitTransactionResponse } from '@/app/types/transbank.types';
 import { supabase } from '@/lib/supabase';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 
+// URL base de Transbank para integración
+const TRANSBANK_URL = 'https://webpay3gint.transbank.cl';
+
 // Configuración de Transbank según el ambiente
 const options = new Options(
   config.commerceCode, 

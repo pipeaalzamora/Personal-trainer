@@ -8,6 +8,10 @@ const isProduction = process.env.TRANSBANK_ENVIRONMENT === 'Production';
 const DEFAULT_INTEGRATION_COMMERCE_CODE = '597055555532';
 const DEFAULT_INTEGRATION_API_KEY = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C';
 
+// URLs para los ambientes de Transbank
+const INTEGRATION_URL = 'https://webpay3gint.transbank.cl';
+const PRODUCTION_URL = 'https://webpay3g.transbank.cl';
+
 export const config = {
   commerceCode: isProduction 
     ? (process.env.TRANSBANK_COMMERCE_CODE || '')
@@ -18,6 +22,6 @@ export const config = {
   environment: isProduction ? 'Production' : 'Integration',
   // Hosts específicos según el ambiente
   webpayHost: isProduction 
-    ? 'https://webpay3g.transbank.cl'
-    : 'https://webpay3gint.transbank.cl'
+    ? PRODUCTION_URL
+    : INTEGRATION_URL
 };

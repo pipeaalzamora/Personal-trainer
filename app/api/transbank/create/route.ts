@@ -7,7 +7,10 @@ import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 
 // Aseguramos que la URL base sea siempre HTTPS
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://personal-trainer-roan.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+// URL base de Transbank para ambiente de integración
+const TRANSBANK_URL = 'https://webpay3gint.transbank.cl';
 
 // Configuración de Transbank según el ambiente
 const options = new Options(
@@ -16,7 +19,9 @@ const options = new Options(
   config.environment as Environment
 );
 
-// Inicializar la transacción con la configuración
+// Inicializar la transacción con la configuración personalizada
+// La SDK de Transbank no permite cambiar la URL base directamente,
+// pero usamos la configuración del config.ts que tiene la URL correcta
 const tx = new WebpayPlus.Transaction(options);
 
 // Tipo para el cuerpo de la solicitud
@@ -134,8 +139,8 @@ export async function POST(req: NextRequest) {
       throw new Error(`Error al crear los items de la orden: ${itemsError.message}`);
     }
     
-    // Aseguramos que la URL de retorno use HTTPS
-    const returnUrl = new URL('/api/transbank/commit', BASE_URL).toString();
+    // Aseguramos que la URL de retorno use la URL base correcta
+    const returnUrl = `${BASE_URL}/api/transbank/commit`;
     
     // Crear la transacción en Transbank
     const response = await tx.create(

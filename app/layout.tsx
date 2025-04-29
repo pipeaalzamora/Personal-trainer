@@ -1,10 +1,12 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { Dumbbell, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import Footer from '@/app/components/footer';
 import { CartProvider } from '@/hooks/useCart'
 import CartIcon from '@/app/components/CartIcon';
+import Image from 'next/image';
+import logo from '@/public/logo.png';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
@@ -23,9 +25,15 @@ export default function RootLayout({
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-              <Dumbbell/>
-              CoachInostroza
+            <div className="w-10"></div>
+            <Link href="/" className="flex items-center justify-center">
+              <Image 
+                src={logo} 
+                alt="CoachInostroza Logo" 
+                width={150} 
+                height={150} 
+                className="rounded-full"
+              />
             </Link>
             <div className="flex gap-4">
                 <CartIcon />

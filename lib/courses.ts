@@ -93,7 +93,7 @@ export const courses: Course[] = [
     title: "Fase III: Potenciación",
     description:
       "¡La fase definitiva! Aquí trabajaremos con entrenamientos de alta intensidad y técnicas avanzadas para maximizar la pérdida de grasa y definir tu cuerpo. Esta es la fase donde alcanzarás tus metas de definición total y mejor forma física. ¡Estás a punto de transformar tu cuerpo!",
-    price: 20.00,
+    price: 25.00,
     duration: "5 semanas",
     image: perdida3,
     category: "Pérdida de Grasa Corporal",

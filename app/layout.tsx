@@ -1,8 +1,10 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { Dumbbell } from 'lucide-react';
-import  Footer  from '@/app/components/footer';
+import { Dumbbell, CreditCard, BookOpen, ShoppingCart } from 'lucide-react';
+import Footer from '@/app/components/footer';
+import { CartProvider } from '@/hooks/useCart'
+import CartIcon from '@/app/components/CartIcon';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
@@ -16,21 +18,34 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-cover bg-center`} style={{ backgroundColor: '#000033' }}>
-        <nav className=" bg-gradient-to-r from-red-500 to-black text-white p-4">
-          <div className="container mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Dumbbell/>
-            CoachInostroza
-          </Link>
-            <Link href="/cart" className="hover:underline">Carrito</Link>
-          </div>
-        </nav>
-        {children}
-        <Footer/>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
+        <CartProvider>
+          <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">
+            <div className="container mx-auto flex justify-between items-center">
+              <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+                <Dumbbell/>
+                CoachInostroza
+              </Link>
+              <div className="flex gap-4">
+                <Link href="/my-courses" className="hover:underline flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>Mis Cursos</span>
+                </Link>
+                <Link href="/admin/transbank" className="hover:underline flex items-center gap-1">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Configurar Transbank</span>
+                </Link>
+                <CartIcon />
+              </div>
+            </div>
+          </nav>
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer/>
+        </CartProvider>
       </body>
-  
     </html>
   )
 }

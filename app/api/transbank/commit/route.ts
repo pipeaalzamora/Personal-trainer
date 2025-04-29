@@ -5,119 +5,114 @@ import { CommitTransactionResponse } from '@/app/types/transbank.types';
 import { supabase } from '@/lib/supabase';
 import { sendOrderConfirmationEmail } from '@/lib/email';
 
-const options = new Options(config.commerceCode, config.apiKey, config.environment as Environment);
+// Configuración de Transbank según el ambiente
+const options = new Options(
+  config.commerceCode, 
+  config.apiKey, 
+  config.environment as Environment
+);
+
+// Inicializar la transacción con la configuración
 const tx = new WebpayPlus.Transaction(options);
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { token } = body;
-    
+    // Obtener el token y verifica si es válido
+    const body = await req.formData();
+    const token = body.get('token_ws') as string;
+
     if (!token) {
-      return NextResponse.json(
-        { error: 'El token de transacción es requerido' }, 
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Token no encontrado' }, { status: 400 });
     }
-    
-    // Buscar la orden asociada al token en Supabase
+
+    // Confirmar la transacción con Transbank
+    const response = await tx.commit(token) as CommitTransactionResponse;
+
+    // Verificar si la transacción fue exitosa (0 = aprobada)
+    const isSuccessful = response.response_code === 0;
+
+    // Buscar la orden asociada a esta transacción
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select(`
-        *,
-        user:users(*),
-        items:order_items(*, course:courses(*))
-      `)
+      .select('*')
       .eq('transaction_token', token)
       .single();
-    
+
     if (orderError || !order) {
       return NextResponse.json(
-        { error: 'No se encontró la orden asociada a esta transacción' },
+        { error: `Orden no encontrada: ${orderError?.message || ''}` }, 
         { status: 404 }
       );
     }
-    
-    // Confirmar la transacción con Transbank
-    const response = await tx.commit(token) as CommitTransactionResponse;
-    
-    // Comprobar el estado de la transacción
-    if (response.response_code === 0) {
-      // La transacción fue aprobada
-      // Actualizar la orden en Supabase
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'COMPLETED',
-          authorization_code: response.authorization_code,
-          payment_type: response.payment_type_code,
-          card_number: response.card_detail ? response.card_detail.card_number : null
-        })
-        .eq('id', order.id);
-      
-      if (updateError) {
-        throw new Error(`Error al actualizar la orden: ${updateError.message}`);
-      }
-      
-      // Enviar correo de confirmación
-      const courseTitles = order.items.map((item: any) => item.course.title as string);
-      
-      await sendOrderConfirmationEmail(
-        order.user.email,
-        {
+
+    // Actualizar el estado de la orden
+    const newStatus = isSuccessful ? 'COMPLETED' : 'FAILED';
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ 
+        status: newStatus,
+        transaction_response: response 
+      })
+      .eq('id', order.id);
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: `Error al actualizar la orden: ${updateError.message}` }, 
+        { status: 500 }
+      );
+    }
+
+    // Si la transacción fue exitosa, enviar correo de confirmación
+    if (isSuccessful) {
+      // Obtener datos del usuario
+      const { data: user } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', order.user_id)
+        .single();
+
+      // Obtener datos de los cursos comprados
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('course_id')
+        .eq('order_id', order.id);
+
+      if (user && orderItems && orderItems.length > 0) {
+        // Obtener títulos de los cursos
+        const courseIds = orderItems.map(item => item.course_id);
+        const { data: courses } = await supabase
+          .from('courses')
+          .select('title')
+          .in('id', courseIds);
+
+        const courseTitles = courses ? courses.map(course => course.title) : [];
+
+        // Enviar correo de confirmación
+        await sendOrderConfirmationEmail(user.email, {
           orderId: order.id,
           buyOrder: order.buy_order,
           courseTitles,
           totalAmount: order.total_amount
-        }
+        });
+      }
+
+      // Redirigir a la página de éxito
+      return NextResponse.redirect(
+        new URL(`/payment/success?order_id=${order.id}`, req.nextUrl.origin)
       );
-      
-      return NextResponse.json({
-        ...response,
-        status: 'AUTHORIZED'
-      });
     } else {
-      // La transacción fue rechazada
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          status: 'FAILED'
-        })
-        .eq('id', order.id);
-      
-      if (updateError) {
-        throw new Error(`Error al actualizar la orden: ${updateError.message}`);
-        }
-      
-      return NextResponse.json({
-        ...response,
-        status: 'REJECTED',
-        error: obtenerMensajeError(response.response_code)
-      });
+      // Redirigir a la página de error
+      return NextResponse.redirect(
+        new URL(`/payment/error?code=${response.response_code}`, req.nextUrl.origin)
+      );
     }
-  } catch (error: unknown) {
-    console.error('Error confirmando transacción:', error);
-    return NextResponse.json(
-      { 
-        error: (error as Error).message || 'Error al confirmar la transacción',
-        status: 'ERROR'
-      }, 
-      { status: 500 }
+  } catch (error) {
+    console.error('Error procesando el pago:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    // En caso de error, redirigir a página de error
+    return NextResponse.redirect(
+      new URL(`/payment/error?message=${encodeURIComponent(errorMessage)}`, req.nextUrl.origin)
     );
   }
-}
-
-// Función para obtener mensajes de error según el código de respuesta
-function obtenerMensajeError(responseCode: number): string {
-  const mensajes: Record<number, string> = {
-    '-1': 'Rechazo por error en el comercio',
-    '-2': 'Rechazo por error en la tarjeta',
-    '-3': 'Error en la transacción',
-    '-4': 'Rechazo por monto inválido',
-    '-5': 'Rechazo por error general',
-    '-6': 'Rechazo por exceder el monto máximo permitido',
-    '-7': 'Rechazo por exceder el límite de intentos permitidos',
-  };
-
-  return mensajes[responseCode] || `Error desconocido (código ${responseCode})`;
 }

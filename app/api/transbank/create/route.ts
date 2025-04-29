@@ -6,9 +6,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 
+// Aseguramos que la URL base sea siempre HTTPS
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://personal-trainer-roan.vercel.app";
 
-// Configuración correcta de Transbank según el ambiente
+// Configuración de Transbank según el ambiente
 const options = new Options(
   config.commerceCode, 
   config.apiKey, 
@@ -18,9 +19,16 @@ const options = new Options(
 // Inicializar la transacción con la configuración
 const tx = new WebpayPlus.Transaction(options);
 
+// Tipo para el cuerpo de la solicitud
+interface RequestBody {
+  amount: number;
+  email: string;
+  cart: Array<{id: string; price: number}>;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json() as RequestBody;
     const { amount, email, cart } = body;
     
     if (!amount || amount <= 0) {
@@ -42,7 +50,7 @@ export async function POST(req: NextRequest) {
     const sessionId = `SESSION-${email.split('@')[0]}-${Date.now()}`;
     
     // Buscar usuario en Supabase por email
-    let { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('*')
       .eq('email', email)
@@ -52,7 +60,9 @@ export async function POST(req: NextRequest) {
       throw new Error(`Error al buscar usuario: ${userError.message}`);
     }
 
-    if (!user) {
+    let userData = user;
+    
+    if (!userData) {
       // Generar token de verificación
       const verificationToken = uuidv4();
       
@@ -73,7 +83,7 @@ export async function POST(req: NextRequest) {
         throw new Error(`Error al crear usuario: ${createError.message}`);
       }
       
-      user = newUser;
+      userData = newUser;
       
       // Enviar correo de verificación
       await sendEmail({
@@ -86,12 +96,16 @@ export async function POST(req: NextRequest) {
       });
     }
     
+    if (!userData) {
+      throw new Error('No se pudo crear o encontrar el usuario');
+    }
+    
     // Crear la orden en Supabase
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert([
         {
-          user_id: user.id,
+          user_id: userData.id,
           total_amount: amount,
           buy_order: buyOrder,
           session_id: sessionId,
@@ -101,8 +115,8 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
     
-    if (orderError) {
-      throw new Error(`Error al crear la orden: ${orderError.message}`);
+    if (orderError || !order) {
+      throw new Error(`Error al crear la orden: ${orderError?.message || 'Datos de orden no disponibles'}`);
     }
     
     // Crear los items de la orden
@@ -120,13 +134,8 @@ export async function POST(req: NextRequest) {
       throw new Error(`Error al crear los items de la orden: ${itemsError.message}`);
     }
     
-    // Crear la URL de retorno para Transbank
-    const baseUrl = process.env.NODE_ENV === 'production' 
-      ? 'https://personal-trainer-roan.vercel.app'
-      : 'http://localhost:3000';
-    
-    const returnUrl = `${baseUrl}/api/transbank/commit`;
-    console.log('URL de retorno:', returnUrl);
+    // Aseguramos que la URL de retorno use HTTPS
+    const returnUrl = new URL('/api/transbank/commit', BASE_URL).toString();
     
     // Crear la transacción en Transbank
     const response = await tx.create(
@@ -147,11 +156,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(response);
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Error creando transacción:', error);
-    return NextResponse.json(
-      { error: (error as Error).message || 'Error al crear la transacción' }, 
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Error al crear la transacción';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://personal-trainer-roan.vercel.app";
+
 // Configuración correcta de Transbank según el ambiente
 const options = new Options(
   config.commerceCode, 
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
         subject: 'Verifica tu correo electrónico - Coach Inostroza',
         html: `
           <p>Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace:</p>
-          <a href="http://localhost:3000/verify-email?token=${verificationToken}">Verificar correo</a>
+          <a href="${BASE_URL}/verify-email?token=${verificationToken}">Verificar correo</a>
         `
       });
     }
@@ -118,9 +120,12 @@ export async function POST(req: NextRequest) {
       throw new Error(`Error al crear los items de la orden: ${itemsError.message}`);
     }
     
-    // En el ambiente de integración, usar una URL compatible con Transbank
-    // NOTA: Esta URL debe ser accesible desde Internet para producción
-    const returnUrl = "https://transbank-rest-demo.herokuapp.com/webpay_plus/commit";
+    // Crear la URL de retorno para Transbank
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://personal-trainer-roan.vercel.app'
+      : 'http://localhost:3000';
+    
+    const returnUrl = `${baseUrl}/api/transbank/commit`;
     console.log('URL de retorno:', returnUrl);
     
     // Crear la transacción en Transbank

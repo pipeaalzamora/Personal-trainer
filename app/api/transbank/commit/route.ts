@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       
       if (updateError) {
         throw new Error(`Error al actualizar la orden: ${updateError.message}`);
-      }
+        }
       
       return NextResponse.json({
         ...response,

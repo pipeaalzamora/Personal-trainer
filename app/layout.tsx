@@ -22,28 +22,28 @@ export default function RootLayout({
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">
-            <div className="container mx-auto flex justify-between items-center">
-              <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-                <Dumbbell/>
-                CoachInostroza
+          <div className="container mx-auto flex justify-between items-center">
+            <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+              <Dumbbell/>
+              CoachInostroza
+            </Link>
+            <div className="flex gap-4">
+              <Link href="/my-courses" className="hover:underline flex items-center gap-1">
+                <BookOpen className="h-4 w-4" />
+                <span>Mis Cursos</span>
               </Link>
-              <div className="flex gap-4">
-                <Link href="/my-courses" className="hover:underline flex items-center gap-1">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Mis Cursos</span>
-                </Link>
-                <Link href="/admin/transbank" className="hover:underline flex items-center gap-1">
-                  <CreditCard className="h-4 w-4" />
-                  <span>Configurar Transbank</span>
-                </Link>
+              <Link href="/admin/transbank" className="hover:underline flex items-center gap-1">
+                <CreditCard className="h-4 w-4" />
+                <span>Configurar Transbank</span>
+              </Link>
                 <CartIcon />
-              </div>
             </div>
-          </nav>
+          </div>
+        </nav>
           <main className="flex-grow">
-            {children}
+        {children}
           </main>
-          <Footer/>
+        <Footer/>
         </CartProvider>
       </body>
     </html>

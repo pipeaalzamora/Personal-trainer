@@ -104,7 +104,7 @@ export default function TransbankConfigPage() {
               </p>
               <pre className="bg-gray-100 p-3 rounded-md mt-2 text-xs overflow-x-auto">
                 {`# URL base del sitio (sin barra final)
-NEXT_PUBLIC_BASE_URL=http://localhost:3000
+NEXT_PUBLIC_BASE_URL=https://personal-trainer-roan.vercel.app
 
 # Credenciales de Transbank
 TRANSBANK_COMMERCE_CODE=${commerceCode || "597055555532"}

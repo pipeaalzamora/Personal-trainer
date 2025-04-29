@@ -17,9 +17,9 @@ export default function TrainerProfile() {
         <Image
           src={perfil.src}
           alt="Foto del entrenador"
-          width={300}
-          height={500}
-          className="w-50 h-50 object-cover rounded-full mb-4 md:mb-0 md:mr-5 shadow-md border-white border-4 hover:border-black"
+          width={400}
+          height={600}
+          className="w-80 h-80 object-cover rounded-full mb-4 md:mb-0 md:mr-5 shadow-md border-white border-4 hover:border-black"
         />
          <Link 
             href="https://www.instagram.com/coach_inostroza10/" 

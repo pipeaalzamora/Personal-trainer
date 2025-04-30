@@ -31,31 +31,16 @@ export default function AddToCartButton({ course }: { course: Course }) {
     // Agregar el curso al carrito
     addToCart(course)
     
-    // Llamar al endpoint de Transbank
     try {
-      const response = await fetch('/api/transbank', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount: course.price, orderId: course.id }),
+      // Añadir el curso al carrito es suficiente, no necesitamos llamar a Transbank aquí
+      setIsAdded(true)
+      toast({
+        title: "Curso añadido al carrito",
+        description: `${course.title} ha sido añadido a tu carrito.`,
       })
-
-      if (response.ok) {
-        setIsAdded(true)
-        toast({
-          title: "Curso añadido al carrito",
-          description: `${course.title} ha sido añadido a tu carrito.`,
-        })
-        
-        // Redirigir al usuario a la página del carrito
-        router.push('/cart')
-      } else {
-        toast({
-          title: "Error",
-          description: "No se pudo procesar la transacción.",
-        })
-      }
+      
+      // Redirigir al usuario a la página del carrito
+      router.push('/cart')
     } catch (error) {
       toast({
         title: "Error",

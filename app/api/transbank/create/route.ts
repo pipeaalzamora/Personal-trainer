@@ -7,10 +7,17 @@ import { supabase } from '@/lib/supabase';
 import { sendEmail } from '@/lib/email';
 
 // Aseguramos que la URL base sea siempre HTTPS
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://personal-trainer-roan.vercel.app/';
 
 // URL base de Transbank para ambiente de integración
 const TRANSBANK_URL = 'https://webpay3gint.transbank.cl';
+
+// Función para construir URLs correctamente sin barras duplicadas
+const buildUrl = (base: string, path: string) => {
+  const baseWithoutTrailingSlash = base.endsWith('/') ? base.slice(0, -1) : base;
+  const pathWithoutLeadingSlash = path.startsWith('/') ? path.slice(1) : path;
+  return `${baseWithoutTrailingSlash}/${pathWithoutLeadingSlash}`;
+};
 
 // Configuración de Transbank según el ambiente
 const options = new Options(
@@ -90,13 +97,13 @@ export async function POST(req: NextRequest) {
       
       userData = newUser;
       
-      // Enviar correo de verificación
+      // Enviar correo de verificación usando la función buildUrl para evitar problemas con barras
       await sendEmail({
         to: email,
         subject: 'Verifica tu correo electrónico - Coach Inostroza',
         html: `
           <p>Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace:</p>
-          <a href="${BASE_URL}/verify-email?token=${verificationToken}">Verificar correo</a>
+          <a href="${buildUrl(BASE_URL, 'verify-email')}?token=${verificationToken}">Verificar correo</a>
         `
       });
     }
@@ -139,8 +146,10 @@ export async function POST(req: NextRequest) {
       throw new Error(`Error al crear los items de la orden: ${itemsError.message}`);
     }
     
-    // Aseguramos que la URL de retorno use la URL base correcta
-    const returnUrl = `${BASE_URL}/api/transbank/commit`;
+    // Aseguramos que la URL de retorno use la URL base correcta con la función buildUrl
+    const returnUrl = buildUrl(BASE_URL, 'api/transbank/commit');
+    
+    console.log('URL de retorno:', returnUrl); // Para depuración
     
     // Crear la transacción en Transbank
     const response = await tx.create(

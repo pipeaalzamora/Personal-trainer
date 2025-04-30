@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import './globals.css'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
@@ -7,11 +8,19 @@ import { CartProvider } from '@/hooks/useCart'
 import CartIcon from '@/app/components/CartIcon';
 import Image from 'next/image';
 import logo from '@/public/logo.png';
+import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'Fitness Courses',
-  description: 'High-quality fitness courses by professional trainers',
+export const metadata: Metadata = {
+  title: 'Personal Trainer - Programas de entrenamiento personalizados',
+  description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados. Ganancia muscular, pérdida de grasa, powerlifting y más.',
+  keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, powerlifting, fuerza, fitness',
+  authors: [{ name: 'Personal Trainer' }],
+  openGraph: {
+    title: 'Personal Trainer - Programas de entrenamiento personalizados',
+    description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
@@ -20,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="es" className="h-full">
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">
@@ -45,6 +54,7 @@ export default function RootLayout({
           </main>
         <Footer/>
         </CartProvider>
+        <Toaster />
       </body>
     </html>
   )

@@ -1,23 +1,57 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Activar el directorio app
+  experimental: {
+    serverActions: true,
+  },
+
+  // Configuración de dominios de imágenes
   images: {
-    domains: ['personal-trainer-roan.vercel.app', 'oyfpzkozkmlgowbsshbt.supabase.co', 'randomuser.me'],
+    domains: [
+      'images.unsplash.com',
+      'plus.unsplash.com',
+      'uploadthing.com',
+      'utfs.io',
+      'via.placeholder.com',
+      'placehold.co',
+      'loremflickr.com'
+    ],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'randomuser.me',
-        pathname: '/api/portraits/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'personal-trainer-roan.vercel.app',
-      },
-      {
-        protocol: 'https',
-        hostname: 'oyfpzkozkmlgowbsshbt.supabase.co',
+        hostname: '**',
       },
     ],
-  }
+  },
+
+  // Reescrituras para manejo de CORS en Transbank
+  async rewrites() {
+    return [
+      {
+        source: '/webpay-api/:path*',
+        destination: 'https://webpay3gint.transbank.cl/rswebpaytransaction/api/webpay/:path*',
+      },
+    ];
+  },
+
+  // Cabeceras para CORS
+  async headers() {
+    return [
+      {
+        // Permitir CORS para todas las rutas de API
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
+          { key: 'Access-Control-Allow-Origin', value: '*' }, // Reemplazar por tu dominio en producción
+          { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS,PATCH,DELETE,POST,PUT' },
+          { 
+            key: 'Access-Control-Allow-Headers', 
+            value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

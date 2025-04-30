@@ -1,178 +1,194 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { WebpayPlus, Options, Environment } from 'transbank-sdk';
+import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
-import { CreateTransactionResponse } from '@/app/types/transbank.types';
-import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/lib/supabase';
-import { sendEmail } from '@/lib/email';
 
-// Aseguramos que la URL base sea siempre HTTPS
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://personal-trainer-roan.vercel.app/';
-
-// URL base de Transbank para ambiente de integración
-const TRANSBANK_URL = 'https://webpay3gint.transbank.cl';
-
-// Función para construir URLs correctamente sin barras duplicadas
-const buildUrl = (base: string, path: string) => {
-  const baseWithoutTrailingSlash = base.endsWith('/') ? base.slice(0, -1) : base;
-  const pathWithoutLeadingSlash = path.startsWith('/') ? path.slice(1) : path;
-  return `${baseWithoutTrailingSlash}/${pathWithoutLeadingSlash}`;
+// Cabeceras CORS para permitir peticiones desde el frontend
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
-// Configuración de Transbank según el ambiente
-const options = new Options(
-  config.commerceCode, 
-  config.apiKey, 
-  config.environment as Environment
-);
-
-// Inicializar la transacción con la configuración personalizada
-// La SDK de Transbank no permite cambiar la URL base directamente,
-// pero usamos la configuración del config.ts que tiene la URL correcta
-const tx = new WebpayPlus.Transaction(options);
-
-// Tipo para el cuerpo de la solicitud
-interface RequestBody {
-  amount: number;
-  email: string;
-  cart: Array<{id: string; price: number}>;
+// Manejador para solicitudes OPTIONS (pre-flight CORS)
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders
+  });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json() as RequestBody;
-    const { amount, email, cart } = body;
+    // Obtener datos del cliente
+    const { buy_order, session_id, amount, return_url } = await request.json();
     
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: 'El monto debe ser mayor a 0' }, { status: 400 });
+    // Validar datos de entrada
+    if (!buy_order || !session_id || !amount || !return_url) {
+      return NextResponse.json(
+        { error: 'Faltan datos requeridos (buy_order, session_id, amount, return_url)' },
+        { status: 400, headers: corsHeaders }
+      );
     }
-
-    if (!email) {
-      return NextResponse.json({ error: 'El email es requerido' }, { status: 400 });
-    }
-
-    if (!cart || !Array.isArray(cart) || cart.length === 0) {
-      return NextResponse.json({ error: 'El carrito no puede estar vacío' }, { status: 400 });
-    }
-
-    // Generar una orden de compra única
-    const buyOrder = `OC-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
-    // Usar el email como identificador de sesión
-    const sessionId = `SESSION-${email.split('@')[0]}-${Date.now()}`;
-    
-    // Buscar usuario en Supabase por email
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
+    // Validar formato de los datos según la documentación de Transbank
+    const validations = {
+      buy_order: {
+        valid: typeof buy_order === 'string' && /^[a-zA-Z0-9]{1,26}$/.test(buy_order),
+        message: 'buy_order debe ser alfanumérico y tener máximo 26 caracteres'
+      },
+      session_id: {
+        valid: typeof session_id === 'string' && /^[a-zA-Z0-9]{1,61}$/.test(session_id),
+        message: 'session_id debe ser alfanumérico y tener máximo 61 caracteres'
+      },
+      return_url: {
+        valid: typeof return_url === 'string' && return_url.startsWith('http'),
+        message: 'return_url debe ser una URL válida que comience con http o https'
+      }
+    };
 
-    if (userError && userError.code !== 'PGRST116') { // PGRST116 = No se encontró el registro
-      throw new Error(`Error al buscar usuario: ${userError.message}`);
+    // Verificar si hay errores de validación
+    const validationErrors = Object.entries(validations)
+      .filter(([_, data]) => !data.valid)
+      .map(([field, data]) => `${field}: ${data.message}`);
+
+    if (validationErrors.length > 0) {
+      return NextResponse.json(
+        { 
+          error: 'Error de validación de datos', 
+          details: validationErrors 
+        },
+        { status: 400, headers: corsHeaders }
+      );
     }
-
-    let userData = user;
     
-    if (!userData) {
-      // Generar token de verificación
-      const verificationToken = uuidv4();
+    // Asegurarse de que el monto sea un número entero (Transbank no acepta decimales)
+    const amountInteger = Math.round(Number(amount));
+    
+    if (isNaN(amountInteger) || amountInteger <= 0) {
+      return NextResponse.json(
+        { error: 'El monto debe ser un número positivo' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    
+    console.log('Procesando solicitud para Transbank:', { 
+      buy_order, 
+      session_id, 
+      amount: amountInteger, 
+      return_url,
+      env: config.environment,
+      host: config.webpayHost,
+      commerceCode: config.commerceCode 
+    });
+    
+    // Configurar URL según ambiente (integración o producción)
+    const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions`;
+    
+    const requestBody = JSON.stringify({
+      buy_order,
+      session_id,
+      amount: amountInteger,
+      return_url
+    });
+    
+    console.log('Enviando a Transbank:', requestBody);
+    
+    // Enviar solicitud a Transbank desde el servidor
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Tbk-Api-Key-Id': config.commerceCode,
+        'Tbk-Api-Key-Secret': config.apiKey
+      },
+      body: requestBody
+    });
+    
+    // Capturar respuesta completa para depuración
+    const responseText = await response.text();
+    
+    if (!response.ok) {
+      console.error('Error de Transbank:', response.status, responseText);
       
-      // Crear nuevo usuario en Supabase
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert([
-          {
-            email,
-            verified: false,
-            verification_token: verificationToken
-          }
-        ])
-        .select()
-        .single();
+      let errorDetails: string | Record<string, any> = responseText;
+      let status = response.status;
       
-      if (createError) {
-        throw new Error(`Error al crear usuario: ${createError.message}`);
+      // Manejo específico para el error 422 (Unprocessable Entity)
+      if (response.status === 422) {
+        try {
+          const parsedError = JSON.parse(responseText);
+          console.error('Detalles del error 422:', parsedError);
+          
+          // Mostrar información de debug con todas las variables relevantes
+          console.error('Información de debug para error 422:');
+          console.error('- Commerce Code:', config.commerceCode);
+          console.error('- API Key (primeros 10 caracteres):', config.apiKey.substring(0, 10) + '...');
+          console.error('- Ambiente:', config.environment);
+          console.error('- URL de API:', apiUrl);
+          console.error('- Headers:', {
+            'Content-Type': 'application/json',
+            'Tbk-Api-Key-Id': config.commerceCode,
+            'Tbk-Api-Key-Secret': '(oculto por seguridad)'
+          });
+          console.error('- Body:', requestBody);
+          
+          errorDetails = {
+            transbank_error: parsedError,
+            message: 'Error 422: La petición tiene el formato correcto pero no puede ser procesada por Transbank. Verifique los datos enviados y las credenciales configuradas.'
+          };
+        } catch (e) {
+          console.error('No se pudo parsear el error 422:', e);
+        }
       }
       
-      userData = newUser;
-      
-      // Enviar correo de verificación usando la función buildUrl para evitar problemas con barras
-      await sendEmail({
-        to: email,
-        subject: 'Verifica tu correo electrónico - Coach Inostroza',
-        html: `
-          <p>Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace:</p>
-          <a href="${buildUrl(BASE_URL, 'verify-email')}?token=${verificationToken}">Verificar correo</a>
-        `
-      });
+      return NextResponse.json(
+        { 
+          error: `Error de Transbank: ${response.status} ${response.statusText}`,
+          details: errorDetails,
+          request: {
+            buy_order,
+            session_id,
+            amount: amountInteger,
+            return_url
+          }
+        },
+        { status, headers: corsHeaders }
+      );
     }
     
-    if (!userData) {
-      throw new Error('No se pudo crear o encontrar el usuario');
+    // Parsear la respuesta JSON
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log('Respuesta de Transbank:', data);
+    } catch (parseError) {
+      console.error('Error al parsear respuesta de Transbank:', parseError);
+      return NextResponse.json(
+        { 
+          error: 'Error al procesar la respuesta de Transbank',
+          raw_response: responseText 
+        },
+        { status: 500, headers: corsHeaders }
+      );
     }
     
-    // Crear la orden en Supabase
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert([
-        {
-          user_id: userData.id,
-          total_amount: amount,
-          buy_order: buyOrder,
-          session_id: sessionId,
-          status: 'PENDING'
-        }
-      ])
-      .select()
-      .single();
-    
-    if (orderError || !order) {
-      throw new Error(`Error al crear la orden: ${orderError?.message || 'Datos de orden no disponibles'}`);
+    // Verificar que la respuesta contenga los campos esperados
+    if (!data.token || !data.url) {
+      console.error('Respuesta incompleta de Transbank:', data);
+      return NextResponse.json(
+        { 
+          error: 'Respuesta incompleta de Transbank',
+          response: data 
+        },
+        { status: 500, headers: corsHeaders }
+      );
     }
     
-    // Crear los items de la orden
-    const orderItems = cart.map(course => ({
-      order_id: order.id,
-      course_id: course.id,
-      price: course.price
-    }));
-    
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(orderItems);
-    
-    if (itemsError) {
-      throw new Error(`Error al crear los items de la orden: ${itemsError.message}`);
-    }
-    
-    // Aseguramos que la URL de retorno use la URL base correcta con la función buildUrl
-    const returnUrl = buildUrl(BASE_URL, 'api/transbank/commit');
-    
-    console.log('URL de retorno:', returnUrl); // Para depuración
-    
-    // Crear la transacción en Transbank
-    const response = await tx.create(
-      buyOrder,
-      sessionId,
-      amount,
-      returnUrl
-    ) as CreateTransactionResponse;
-    
-    // Actualizar la orden con el token de la transacción
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({ transaction_token: response.token })
-      .eq('id', order.id);
-    
-    if (updateError) {
-      throw new Error(`Error al actualizar la orden: ${updateError.message}`);
-    }
-
-    return NextResponse.json(response);
+    return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
-    console.error('Error creando transacción:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Error al crear la transacción';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    console.error('Error en API route:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Error desconocido' },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }

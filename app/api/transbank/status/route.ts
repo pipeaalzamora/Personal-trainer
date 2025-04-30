@@ -28,15 +28,14 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log('Confirmando transacción con token:', token);
+    console.log('Consultando estado de transacción con token:', token);
     
-    // Confirmar la transacción con Transbank
+    // Consultar el estado de la transacción con Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
     
     const response = await fetch(apiUrl, {
-      method: 'PUT',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Tbk-Api-Key-Id': config.commerceCode,
         'Tbk-Api-Key-Secret': config.apiKey
       }
@@ -44,12 +43,12 @@ export async function POST(request: Request) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error al confirmar la transacción:', errorText);
-      throw new Error(`Error al confirmar la transacción: ${response.status} ${response.statusText}`);
+      console.error('Error al consultar la transacción:', errorText);
+      throw new Error(`Error al consultar la transacción: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log('Respuesta de confirmación:', data);
+    console.log('Respuesta de consulta de estado:', data);
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {

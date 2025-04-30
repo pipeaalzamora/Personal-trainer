@@ -1,89 +1,138 @@
 "use client"
-import { useState, useEffect } from 'react'
+
+import { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Course } from '../../lib/courses'
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from '@/hooks/useCart'
+
+// Función simple de validación de email
+const validateEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 export default function CartPage() {
   const [email, setEmail] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
-  const { cart, removeFromCart } = useCart()
   const { toast } = useToast()
-
+  const { cart, removeFromCart } = useCart()
+  
+  // Calcular el precio total aquí
   const totalPrice = cart.reduce((sum, course) => sum + course.price, 0)
-
+  
+  // Verificar que el email sea válido y que haya al menos un curso en el carrito
+  const isValid = validateEmail(email) && cart.length > 0
+  
   const handleCheckout = async () => {
-    // Validaciones básicas
-    if (!email) {
+    if (!isValid) {
       toast({
-        title: "Email requerido",
-        description: "Por favor, ingresa tu dirección de correo electrónico.",
-        variant: "destructive",
+        title: "Información incompleta",
+        description: cart.length === 0 
+          ? "Agrega cursos al carrito para continuar"
+          : "Ingresa un correo electrónico válido",
+        variant: "destructive"
       });
       return;
     }
-
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      toast({
-        title: "Email inválido",
-        description: "Por favor, ingresa una dirección de correo electrónico válida.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (cart.length === 0) {
-      toast({
-        title: "Carrito vacío",
-        description: "Tu carrito está vacío. Agrega algún curso antes de proceder al pago.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+    
     setIsProcessing(true);
+    
     try {
+      // 1. Preparar los datos para Transbank
+      const buyOrder = `OC${Date.now()}${Math.floor(Math.random() * 10000)}`.substring(0, 26);
+      const emailPrefix = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const sessionId = `S${emailPrefix}${Date.now()}`.substring(0, 61);
+      const returnUrl = `${window.location.origin}/payment/confirmation`;
+      
+      // Guardar información del comprador
+      localStorage.setItem('tbk_email', email);
+      localStorage.setItem('tbk_cart', JSON.stringify(cart));
+      localStorage.setItem('tbk_buy_order', buyOrder);
+      localStorage.setItem('tbk_session_id', sessionId);
+      localStorage.setItem('tbk_amount', totalPrice.toString());
+      
+      console.log('Iniciando transacción con Transbank:');
+      console.log('- URL de retorno:', returnUrl);
+      console.log('- Orden de compra:', buyOrder);
+      console.log('- ID de sesión:', sessionId);
+      console.log('- Monto:', totalPrice);
+      
+      // 2. Llamar a nuestra API proxy para crear la transacción
       const response = await fetch('/api/transbank/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          buy_order: buyOrder,
+          session_id: sessionId,
           amount: totalPrice,
-          email: email,
-          cart: cart,
-        }),
+          return_url: returnUrl
+        })
       });
-
+      
+      let errorMessage = 'Error al conectar con Transbank';
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error al crear la transacción:', errorData);
-        toast({
-          title: "Error al procesar el pago",
-          description: errorData.error || "Hubo un problema al procesar tu pago.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
+        try {
+          const errorData = await response.json();
+          console.error('Error de Transbank:', errorData);
+          
+          // Mostrar información más detallada sobre el error
+          if (response.status === 422) {
+            errorMessage = 'Error 422: Datos inválidos para Transbank. ';
+            if (errorData.details) {
+              try {
+                const detailsObj = typeof errorData.details === 'string' 
+                  ? JSON.parse(errorData.details) 
+                  : errorData.details;
+                errorMessage += `Detalle: ${detailsObj.error_message || JSON.stringify(detailsObj)}`;
+              } catch (e) {
+                errorMessage += `Detalle: ${errorData.details}`;
+              }
+            }
+          } else {
+            errorMessage = `Error al crear transacción en Transbank: ${response.status} ${response.statusText}`;
+            if (errorData.error) {
+              errorMessage += `. ${errorData.error}`;
+            }
+          }
+        } catch (parseError) {
+          console.error('Error al parsear la respuesta:', parseError);
+          errorMessage = `Error al procesar la respuesta: ${response.status} ${response.statusText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
-
-      const { url, token } = await response.json();
       
-      // Guardar el token en localStorage para recuperarlo después
-      localStorage.setItem('transbank_token', token);
+      const data = await response.json();
+      console.log('Respuesta de Transbank:', data);
       
-      // Redirigir al usuario a la página de pago de Transbank
-      window.location.href = url;
-
+      // Guardar token en localStorage
+      localStorage.setItem('tbk_token', data.token);
+      
+      // Redirigir al formulario de pago de Transbank
+      // Usar un formulario temporal para evitar bloqueos por redirección
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.url;
+      
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'token_ws';
+      tokenInput.value = data.token;
+      
+      form.appendChild(tokenInput);
+      document.body.appendChild(form);
+      form.submit();
+      
     } catch (error) {
-      console.error('Error inesperado:', error);
+      console.error('Error:', error);
       toast({
-        title: "Error inesperado",
-        description: "Hubo un error inesperado al procesar tu pago.",
-        variant: "destructive",
+        title: "Error al procesar el pago",
+        description: error instanceof Error ? error.message : "Hubo un error al conectar con Transbank",
+        variant: "destructive"
       });
       setIsProcessing(false);
     }
@@ -125,16 +174,14 @@ export default function CartPage() {
             onChange={(e) => setEmail(e.target.value)}
             className="mt-4"
           />
-        </CardContent>
-        <CardFooter>
           <Button 
-            onClick={handleCheckout} 
-            disabled={isProcessing || !email || cart.length === 0}
-            className="w-full"
+            onClick={handleCheckout}
+            disabled={!isValid || isProcessing}
+            className="w-full mt-4"
           >
-            {isProcessing ? 'Procesando...' : 'Realizar Pago'}
+            {isProcessing ? 'Procesando...' : 'Proceder al Pago'}
           </Button>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   )

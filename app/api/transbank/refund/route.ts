@@ -18,8 +18,8 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
-    // Obtener el token de la solicitud
-    const { token } = await request.json();
+    // Obtener datos de la solicitud
+    const { token, amount } = await request.json();
     
     if (!token) {
       return NextResponse.json(
@@ -28,28 +28,38 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log('Confirmando transacción con token:', token);
+    if (!amount) {
+      return NextResponse.json(
+        { error: 'Monto no proporcionado' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
     
-    // Confirmar la transacción con Transbank
-    const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
+    console.log('Procesando reembolso para token:', token, 'por monto:', amount);
+    
+    // Realizar el reembolso con Transbank
+    const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}/refunds`;
     
     const response = await fetch(apiUrl, {
-      method: 'PUT',
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Tbk-Api-Key-Id': config.commerceCode,
         'Tbk-Api-Key-Secret': config.apiKey
-      }
+      },
+      body: JSON.stringify({
+        amount: amount
+      })
     });
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error al confirmar la transacción:', errorText);
-      throw new Error(`Error al confirmar la transacción: ${response.status} ${response.statusText}`);
+      console.error('Error al procesar reembolso:', errorText);
+      throw new Error(`Error al procesar reembolso: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log('Respuesta de confirmación:', data);
+    console.log('Respuesta de reembolso:', data);
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {

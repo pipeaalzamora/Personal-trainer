@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,8 @@ interface TransactionResponse {
   installments_number?: number;
 }
 
-export default function ConfirmationPage() {
+// Componente contenedor que usa useSearchParams
+function ConfirmationContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [statusMessage, setStatusMessage] = useState('Procesando el pago...');
   const [transactionData, setTransactionData] = useState<TransactionResponse | null>(null);
@@ -161,62 +162,91 @@ export default function ConfirmationPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold text-center">
-            {status === 'loading' ? 'Procesando pago' : 
-             status === 'success' ? '¡Pago exitoso!' : 'Error en el pago'}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {status === 'loading' ? 'Por favor espera mientras confirmamos tu pago.' : 
-             status === 'success' ? 'Tu pago ha sido procesado correctamente.' : 
-             'Lo sentimos, hubo un problema con tu pago.'}
-          </CardDescription>
-        </CardHeader>
+    <Card className="max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="text-xl font-bold text-center">
+          {status === 'loading' ? 'Procesando pago' : 
+           status === 'success' ? '¡Pago exitoso!' : 'Error en el pago'}
+        </CardTitle>
+        <CardDescription className="text-center">
+          {status === 'loading' ? 'Por favor espera mientras confirmamos tu pago.' : 
+           status === 'success' ? 'Tu pago ha sido procesado correctamente.' : 
+           'Lo sentimos, hubo un problema con tu pago.'}
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className="flex flex-col items-center justify-center py-6">
+        {status === 'loading' ? (
+          <Loader2 className="h-16 w-16 text-primary animate-spin" />
+        ) : status === 'success' ? (
+          <CheckCircle className="h-16 w-16 text-green-500" />
+        ) : (
+          <XCircle className="h-16 w-16 text-red-500" />
+        )}
         
-        <CardContent className="flex flex-col items-center justify-center py-6">
-          {status === 'loading' ? (
-            <Loader2 className="h-16 w-16 text-primary animate-spin" />
-          ) : status === 'success' ? (
-            <CheckCircle className="h-16 w-16 text-green-500" />
-          ) : (
-            <XCircle className="h-16 w-16 text-red-500" />
-          )}
-          
-          <p className="mt-4 text-center">{statusMessage}</p>
-          
-          {status === 'success' && transactionData && (
-            <div className="mt-6 w-full space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium">Orden:</span>
-                <span>{transactionData.buy_order}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Monto:</span>
-                <span>${transactionData.amount.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Tarjeta:</span>
-                <span>**** **** **** {transactionData.card_detail.card_number}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Fecha:</span>
-                <span>{new Date(transactionData.transaction_date).toLocaleString()}</span>
-              </div>
+        <p className="mt-4 text-center">{statusMessage}</p>
+        
+        {status === 'success' && transactionData && (
+          <div className="mt-6 w-full space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="font-medium">Orden:</span>
+              <span>{transactionData.buy_order}</span>
             </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="flex justify-center">
-          <Button 
-            onClick={handleContinue} 
-            disabled={status === 'loading'}
-          >
-            {status === 'success' ? 'Ver mis cursos' : 'Volver al carrito'}
-          </Button>
-        </CardFooter>
-      </Card>
+            <div className="flex justify-between">
+              <span className="font-medium">Monto:</span>
+              <span>${transactionData.amount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Tarjeta:</span>
+              <span>**** **** **** {transactionData.card_detail.card_number}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="font-medium">Fecha:</span>
+              <span>{new Date(transactionData.transaction_date).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      
+      <CardFooter className="flex justify-center">
+        <Button 
+          onClick={handleContinue} 
+          disabled={status === 'loading'}
+        >
+          {status === 'success' ? 'Ver mis cursos' : 'Volver al carrito'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
+
+// Componente fallback para Suspense
+function ConfirmationFallback() {
+  return (
+    <Card className="max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle className="text-xl font-bold text-center">
+          Cargando datos de pago
+        </CardTitle>
+        <CardDescription className="text-center">
+          Por favor espera mientras cargamos la información de tu pago.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <Loader2 className="h-16 w-16 text-primary animate-spin" />
+        <p className="mt-4 text-center">Cargando...</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Componente principal que envuelve todo con Suspense
+export default function ConfirmationPage() {
+  return (
+    <div className="container mx-auto px-4 py-12">
+      <Suspense fallback={<ConfirmationFallback />}>
+        <ConfirmationContent />
+      </Suspense>
     </div>
   );
 } 

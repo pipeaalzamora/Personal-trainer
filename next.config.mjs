@@ -52,6 +52,10 @@ const nextConfig = {
       },
     ];
   },
+
+  // Configuración para React Suspense y errores de hydration
+  reactStrictMode: true,
+  swcMinify: true,
 };
 
 export default nextConfig;

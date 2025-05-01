@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
+import { getUserByEmail, createUser, createOrder, addOrderTransactionHistory } from '@/lib/supabase-api';
+import { v4 as uuidv4 } from 'uuid';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -19,8 +21,8 @@ export async function OPTIONS() {
 export async function POST(request: Request) {
   try {
     // Obtener datos del cliente
-    const { buy_order, session_id, amount, return_url } = await request.json();
-    
+    const { buy_order, session_id, amount, return_url, email, cart } = await request.json();
+
     // Validar datos de entrada
     if (!buy_order || !session_id || !amount || !return_url) {
       return NextResponse.json(
@@ -49,7 +51,7 @@ export async function POST(request: Request) {
     const validationErrors = Object.entries(validations)
       .filter(([_, data]) => !data.valid)
       .map(([field, data]) => `${field}: ${data.message}`);
-
+    
     if (validationErrors.length > 0) {
       return NextResponse.json(
         { 
@@ -59,7 +61,7 @@ export async function POST(request: Request) {
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // Asegurarse de que el monto sea un número entero (Transbank no acepta decimales)
     const amountInteger = Math.round(Number(amount));
     
@@ -69,7 +71,28 @@ export async function POST(request: Request) {
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
+    // Si se proporcionó email, buscar o crear usuario en Supabase
+    let userId = null;
+    if (email) {
+      try {
+        // Buscar usuario existente
+        const user = await getUserByEmail(email);
+        
+        if (user) {
+          userId = user.id;
+        } else {
+          // Crear usuario nuevo con token de verificación
+          const verificationToken = uuidv4();
+          const newUser = await createUser(email, verificationToken);
+          userId = newUser.id;
+        }
+      } catch (userError) {
+        console.error('Error al buscar/crear usuario:', userError);
+        // No interrumpimos el flujo principal si falla la gestión de usuarios
+      }
+    }
+
     console.log('Procesando solicitud para Transbank:', { 
       buy_order, 
       session_id, 
@@ -106,84 +129,73 @@ export async function POST(request: Request) {
     // Capturar respuesta completa para depuración
     const responseText = await response.text();
     
-    if (!response.ok) {
-      console.error('Error de Transbank:', response.status, responseText);
-      
-      let errorDetails: string | Record<string, any> = responseText;
-      let status = response.status;
-      
-      // Manejo específico para el error 422 (Unprocessable Entity)
-      if (response.status === 422) {
-        try {
-          const parsedError = JSON.parse(responseText);
-          console.error('Detalles del error 422:', parsedError);
-          
-          // Mostrar información de debug con todas las variables relevantes
-          console.error('Información de debug para error 422:');
-          console.error('- Commerce Code:', config.commerceCode);
-          console.error('- API Key (primeros 10 caracteres):', config.apiKey.substring(0, 10) + '...');
-          console.error('- Ambiente:', config.environment);
-          console.error('- URL de API:', apiUrl);
-          console.error('- Headers:', {
-            'Content-Type': 'application/json',
-            'Tbk-Api-Key-Id': config.commerceCode,
-            'Tbk-Api-Key-Secret': '(oculto por seguridad)'
-          });
-          console.error('- Body:', requestBody);
-          
-          errorDetails = {
-            transbank_error: parsedError,
-            message: 'Error 422: La petición tiene el formato correcto pero no puede ser procesada por Transbank. Verifique los datos enviados y las credenciales configuradas.'
-          };
-        } catch (e) {
-          console.error('No se pudo parsear el error 422:', e);
-        }
-      }
-      
-      return NextResponse.json(
-        { 
-          error: `Error de Transbank: ${response.status} ${response.statusText}`,
-          details: errorDetails,
-          request: {
-            buy_order,
-            session_id,
-            amount: amountInteger,
-            return_url
-          }
-        },
-        { status, headers: corsHeaders }
-      );
-    }
-    
-    // Parsear la respuesta JSON
-    let data;
+    // Verificar si la respuesta es un JSON válido
+    let responseData;
     try {
-      data = JSON.parse(responseText);
-      console.log('Respuesta de Transbank:', data);
-    } catch (parseError) {
-      console.error('Error al parsear respuesta de Transbank:', parseError);
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      console.error('Respuesta no válida de Transbank:', responseText);
       return NextResponse.json(
-        { 
-          error: 'Error al procesar la respuesta de Transbank',
-          raw_response: responseText 
-        },
-        { status: 500, headers: corsHeaders }
+        { error: 'Respuesta no válida de Transbank', details: responseText },
+        { status: 502, headers: corsHeaders }
       );
     }
     
-    // Verificar que la respuesta contenga los campos esperados
-    if (!data.token || !data.url) {
-      console.error('Respuesta incompleta de Transbank:', data);
+    // Verificar si la respuesta es exitosa
+    if (!response.ok) {
+      console.error('Error en respuesta de Transbank:', responseText);
+      
+      // Devolver error detallado
       return NextResponse.json(
         { 
-          error: 'Respuesta incompleta de Transbank',
-          response: data 
+          error: 'Error en la respuesta de Transbank', 
+          status: response.status,
+          details: responseData
         },
-        { status: 500, headers: corsHeaders }
+        { status: response.status, headers: corsHeaders }
       );
     }
     
-    return NextResponse.json(data, { headers: corsHeaders });
+    // Extraer token y URL de redirección de la respuesta
+    const { token, url } = responseData;
+    
+    // Guardar la orden en la base de datos si tenemos usuario
+    let orderId = null;
+    if (userId) {
+      try {
+        const order = await createOrder(
+          userId,
+          amountInteger,
+          buy_order,
+          session_id,
+          token,
+          'INITIATED'
+        );
+        
+        orderId = order.id;
+        console.log(`Orden ${buy_order} creada en base de datos para usuario ${userId}`);
+        
+        // Registrar en el historial de transacciones
+        await addOrderTransactionHistory(
+          orderId,
+          'INITIATED',
+          {
+            token,
+            amount: amountInteger,
+            timestamp: new Date().toISOString(),
+            user_id: userId
+          }
+        );
+        
+        console.log(`Historial de transacción registrado para orden ${buy_order}: INITIATED`);
+      } catch (orderError) {
+        console.error('Error al crear orden en base de datos:', orderError);
+        // No interrumpimos el flujo principal si falla la creación de la orden
+      }
+    }
+    
+    // Devolver token y URL al cliente
+    return NextResponse.json({ token, url }, { headers: corsHeaders });
   } catch (error) {
     console.error('Error en API route:', error);
     return NextResponse.json(

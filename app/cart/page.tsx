@@ -25,13 +25,29 @@ export default function CartPage() {
   const isValid = validateEmail(email) && cart.length > 0
   
   const handleCheckout = async () => {
-    if (!isValid) {
+    if (!email) {
       toast({
-        title: "Información incompleta",
-        description: cart.length === 0 
-          ? "Agrega cursos al carrito para continuar"
-          : "Ingresa un correo electrónico válido",
-        variant: "destructive"
+        title: "Email requerido",
+        description: "Por favor, introduce tu email para continuar con la compra.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!validateEmail(email)) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, introduce un email válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (cart.length === 0) {
+      toast({
+        title: "Carrito vacío",
+        description: "No hay productos en el carrito.",
+        variant: "destructive",
       });
       return;
     }
@@ -68,7 +84,9 @@ export default function CartPage() {
           buy_order: buyOrder,
           session_id: sessionId,
           amount: totalPrice,
-          return_url: returnUrl
+          return_url: returnUrl,
+          email: email,
+          cart: cart
         })
       });
       
@@ -111,6 +129,38 @@ export default function CartPage() {
       
       // Guardar token en localStorage
       localStorage.setItem('tbk_token', data.token);
+      
+      // Actualizar el estado de la transacción a "IN_PROCESS"
+      try {
+        const statusResponse = await fetch('/api/transbank/update-status', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            buyOrder,
+            token: data.token,
+            status: 'IN_PROCESS',
+            additionalData: {
+              redirectUrl: data.url,
+              timestamp: new Date().toISOString(),
+              device: navigator.userAgent
+            }
+          })
+        });
+        
+        if (statusResponse.ok) {
+          console.log('Estado de transacción actualizado a IN_PROCESS');
+        } else {
+          console.error('Error al actualizar estado de transacción:', await statusResponse.text());
+        }
+      } catch (statusError) {
+        console.error('Error al actualizar estado de transacción:', statusError);
+        // No interrumpimos el flujo principal si falla la actualización
+      }
+      
+      // Pequeña pausa para asegurar que la actualización se complete
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Redirigir al formulario de pago de Transbank
       // Usar un formulario temporal para evitar bloqueos por redirección

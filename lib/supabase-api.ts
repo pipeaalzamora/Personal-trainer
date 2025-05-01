@@ -9,6 +9,10 @@ type Order = Database['public']['Tables']['orders']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
 type FileRecord = Database['public']['Tables']['files']['Row'];
 
+// Nuevos tipos para transacciones
+type OrderInsert = Database['public']['Tables']['orders']['Insert'];
+type OrderItemInsert = Database['public']['Tables']['order_items']['Insert'];
+
 // Constantes
 const BUCKET_COURSES = 'course-files';
 
@@ -182,6 +186,141 @@ export async function getOrderItems(orderId: string): Promise<(OrderItem & { cou
   return data || [];
 }
 
+// Nueva función para crear una orden en la base de datos
+export async function createOrder(
+  userId: string,
+  totalAmount: number,
+  buyOrder: string,
+  sessionId: string,
+  token: string = '',
+  status: string = 'CREATED'
+): Promise<Order> {
+  const orderData: OrderInsert = {
+    user_id: userId,
+    total_amount: totalAmount,
+    status: status,
+    buy_order: buyOrder,
+    session_id: sessionId,
+    transaction_token: token
+  };
+  
+  const { data, error } = await supabase
+    .from('orders')
+    .insert([orderData])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error al crear orden:', error);
+    throw error;
+  }
+  
+  return data;
+}
+
+// Nueva función para actualizar una orden existente con la respuesta de la transacción
+export async function updateOrderTransaction(
+  buyOrder: string,
+  status: string,
+  transactionData: any,
+  token: string = ''
+): Promise<Order> {
+  console.log(`updateOrderTransaction: Actualizando orden ${buyOrder} a estado ${status}`);
+
+  // Verificar si la orden existe
+  const { data: existingOrder, error: findError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('buy_order', buyOrder)
+    .single();
+
+  if (findError) {
+    console.error(`Error al buscar orden con buy_order=${buyOrder}:`, findError);
+    throw findError;
+  }
+
+  if (!existingOrder) {
+    console.error(`No se encontró ninguna orden con buy_order=${buyOrder}`);
+    throw new Error(`No se encontró la orden con buy_order=${buyOrder}`);
+  }
+
+  console.log(`updateOrderTransaction: Orden encontrada con ID=${existingOrder.id}, estado actual=${existingOrder.status}`);
+
+  // Preparar los datos para la actualización
+  const updateData: any = {
+    status: status,
+    updated_at: new Date().toISOString()
+  };
+
+  // Actualizar el token sólo si se proporciona
+  if (token) {
+    updateData.transaction_token = token;
+  }
+
+  // Actualizar los datos de la transacción si se proporcionan
+  if (transactionData && Object.keys(transactionData).length > 0) {
+    updateData.transaction_response = transactionData;
+  }
+
+  console.log(`updateOrderTransaction: Actualizando datos:`, updateData);
+
+  const { data, error } = await supabase
+    .from('orders')
+    .update(updateData)
+    .eq('buy_order', buyOrder)
+    .select()
+    .single();
+  
+  if (error) {
+    console.error(`Error al actualizar orden con buy_order=${buyOrder}:`, error);
+    throw error;
+  }
+
+  console.log(`updateOrderTransaction: Orden actualizada correctamente, nuevo estado=${data.status}`);
+  
+  return data;
+}
+
+// Nueva función para crear items de orden (cursos comprados)
+export async function createOrderItems(
+  orderId: string,
+  items: { course_id: string, price: number }[]
+): Promise<OrderItem[]> {
+  const orderItems: OrderItemInsert[] = items.map(item => ({
+    order_id: orderId,
+    course_id: item.course_id,
+    price: item.price
+  }));
+  
+  const { data, error } = await supabase
+    .from('order_items')
+    .insert(orderItems)
+    .select();
+  
+  if (error) {
+    console.error('Error al crear items de orden:', error);
+    throw error;
+  }
+  
+  return data;
+}
+
+// Nueva función para obtener una orden por su número de orden (buy_order)
+export async function getOrderByBuyOrder(buyOrder: string): Promise<Order | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('buy_order', buyOrder)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error al obtener orden por buy_order:', error);
+    throw error;
+  }
+  
+  return data;
+}
+
 // API de Archivos
 export async function uploadCourseFile(
   courseId: string, 
@@ -262,8 +401,46 @@ export async function deleteCourseFile(fileId: string): Promise<void> {
       .eq('id', fileId);
     
     if (deleteError) {
-      console.error('Error al eliminar registro del archivo:', deleteError);
+      console.error('Error al eliminar registro de archivo:', deleteError);
       throw deleteError;
     }
   }
+}
+
+export async function getOrderTransactionHistory(orderId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('order_transaction_history')
+    .select('*')
+    .eq('order_id', orderId)
+    .order('created_at', { ascending: true });
+  
+  if (error) {
+    console.error('Error al obtener historial de transacción:', error);
+    throw error;
+  }
+  
+  return data || [];
+}
+
+export async function addOrderTransactionHistory(
+  orderId: string,
+  status: string,
+  data: any = {}
+): Promise<any> {
+  const { data: result, error } = await supabase
+    .from('order_transaction_history')
+    .insert([{
+      order_id: orderId,
+      status,
+      data
+    }])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error('Error al agregar historial de transacción:', error);
+    throw error;
+  }
+  
+  return result;
 } 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
+import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory } from '@/lib/supabase-api';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log('Confirmando transacción con token:', token);
+    console.log('🔄 Confirmando transacción con token:', token);
     
     // Confirmar la transacción con Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
@@ -44,16 +45,69 @@ export async function POST(request: Request) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error al confirmar la transacción:', errorText);
+      console.error('❌ Error al confirmar la transacción:', errorText);
       throw new Error(`Error al confirmar la transacción: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
-    console.log('Respuesta de confirmación:', data);
+    console.log('✅ Respuesta de confirmación:', data);
+    
+    // Determinar el estado según la respuesta
+    const status = data.response_code === 0 ? 'COMPLETED' : 'FAILED';
+    console.log(`Estado determinado: ${status}, código de respuesta: ${data.response_code}`);
+    
+    // Verificar si la orden existe
+    try {
+      const existingOrder = await getOrderByBuyOrder(data.buy_order);
+      console.log(`Orden encontrada: ${existingOrder ? existingOrder.id : 'No encontrada'}`);
+      
+      if (!existingOrder) {
+        console.warn(`⚠️ No se encontró la orden con buy_order=${data.buy_order}`);
+      } else {
+        console.log(`Estado actual de la orden: ${existingOrder.status}`);
+      }
+    } catch (orderError) {
+      console.error('❌ Error al buscar la orden:', orderError);
+    }
+    
+    // Actualizar la orden en Supabase
+    try {
+      const updatedOrder = await updateOrderTransaction(
+        data.buy_order,
+        status,
+        data,
+        token
+      );
+      console.log(`✅ Orden ${data.buy_order} actualizada en base de datos con estado: ${status}`);
+      console.log(`ID de la orden actualizada: ${updatedOrder.id}`);
+      
+      // Registrar en el historial de transacciones
+      if (updatedOrder && updatedOrder.id) {
+        await addOrderTransactionHistory(
+          updatedOrder.id,
+          status,
+          {
+            token,
+            amount: data.amount,
+            timestamp: new Date().toISOString(),
+            response_code: data.response_code,
+            transaction_date: data.transaction_date,
+            card_number: data.card_detail?.card_number || ''
+          }
+        );
+        
+        console.log(`✅ Historial de transacción registrado para orden ${data.buy_order}: ${status}`);
+      } else {
+        console.error('❌ No se pudo registrar historial: updatedOrder no válido');
+      }
+    } catch (dbError) {
+      console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
+      // No interrumpimos el flujo principal si falla la actualización en BD
+    }
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
-    console.error('Error en API route:', error);
+    console.error('❌ Error en API route:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500, headers: corsHeaders }

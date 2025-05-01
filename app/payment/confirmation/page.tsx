@@ -26,15 +26,37 @@ interface TransactionResponse {
   installments_number?: number;
 }
 
-// Componente contenedor que usa useSearchParams
+// Página principal de confirmación
+export default function ConfirmationPage() {
+  return (
+    <div className="container mx-auto py-10">
+      <Suspense fallback={<PaymentLoading />}>
+        <ConfirmationContent />
+      </Suspense>
+    </div>
+  );
+}
+
+// Componente de carga
+function PaymentLoading() {
+  return (
+    <div className="flex flex-col items-center justify-center py-10">
+      <Loader2 className="h-16 w-16 text-primary animate-spin" />
+      <p className="mt-4 text-center">Procesando tu pago, por favor espera...</p>
+    </div>
+  );
+}
+
 function ConfirmationContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [statusMessage, setStatusMessage] = useState('Procesando el pago...');
+  const [statusMessage, setStatusMessage] = useState('Procesando tu pago...');
   const [transactionData, setTransactionData] = useState<TransactionResponse | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
   const { clearCart } = useCart();
+  
+  // Referencia para evitar procesamiento múltiple
   const processingCompleteRef = useRef(false);
   
   useEffect(() => {
@@ -44,15 +66,15 @@ function ConfirmationContent() {
     }
     
     const token = searchParams.get('token_ws');
-    
     if (!token) {
       setStatus('error');
-      setStatusMessage('Error: Token no encontrado');
-      processingCompleteRef.current = true;
+      setStatusMessage('No se ha recibido un token de pago válido.');
       return;
     }
     
-    const confirmPayment = async () => {
+    confirmPayment();
+    
+    async function confirmPayment() {
       try {
         // Marcar como en proceso para evitar múltiples ejecuciones
         processingCompleteRef.current = true;
@@ -105,6 +127,49 @@ function ConfirmationContent() {
             const previousPurchases = JSON.parse(localStorage.getItem('user_courses') || '[]');
             const updatedPurchases = [...previousPurchases, ...coursePurchases];
             localStorage.setItem('user_courses', JSON.stringify(updatedPurchases));
+            
+            // Enviar comprobante de pago y confirmación de compra por email
+            if (email) {
+              try {
+                // 1. Primero enviar el comprobante de la transacción
+                await fetch('/api/auth/send-payment-receipt', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email,
+                    transactionId: data.buy_order,
+                    cardNumber: data.card_detail.card_number,
+                    amount: data.amount,
+                    date: new Date(data.transaction_date).toLocaleString('es-ES'),
+                    authCode: data.authorization_code
+                  }),
+                });
+                
+                // 2. Luego enviar la confirmación de compra
+                const courseTitles = cart.map((course: any) => course.title);
+                
+                await fetch('/api/auth/send-order-email', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email,
+                    orderId: `ORD-${Date.now()}`, // Generar un ID de orden único
+                    buyOrder: data.buy_order,
+                    courseTitles,
+                    totalAmount: data.amount
+                  }),
+                });
+                
+                console.log('Emails de confirmación enviados correctamente');
+              } catch (emailError) {
+                console.error('Error al procesar el envío de email:', emailError);
+                // No interrumpimos el flujo principal si falla el envío de email
+              }
+            }
           }
           
           // Mostrar toast de éxito
@@ -120,45 +185,37 @@ function ConfirmationContent() {
           localStorage.removeItem('tbk_session_id');
           localStorage.removeItem('tbk_amount');
           localStorage.removeItem('tbk_token');
-          
         } else {
-          // Pago rechazado
+          // Pago fallido
           setStatus('error');
-          setStatusMessage(`Pago rechazado. Código: ${data.response_code}`);
+          setStatusMessage(`Error en el pago: ${data.response_code}`);
           
           toast({
-            title: "Pago rechazado",
-            description: `La transacción fue rechazada con código ${data.response_code}.`,
+            title: "Error en el pago",
+            description: `No se pudo completar la transacción. Código: ${data.response_code}`,
             variant: "destructive",
           });
         }
       } catch (error) {
-        console.error('Error:', error);
+        console.error('Error al procesar la transacción:', error);
         setStatus('error');
-        setStatusMessage(error instanceof Error ? error.message : 'Error al confirmar el pago');
+        setStatusMessage(error instanceof Error ? error.message : 'Error desconocido');
         
         toast({
-          title: "Error de procesamiento",
-          description: "Hubo un problema al confirmar tu pago.",
+          title: "Error en el pago",
+          description: error instanceof Error ? error.message : 'Error desconocido',
           variant: "destructive",
         });
       }
-    };
-    
-    confirmPayment();
-    
-    // Cleanup function - asegurarse de que no se llame múltiples veces
-    return () => {
-      processingCompleteRef.current = true;
-    };
-  }, [searchParams, toast, clearCart]); // Quitar router de las dependencias
-  
-  const handleContinue = () => {
-    if (status === 'success') {
-      router.push('/my-courses');
-    } else {
-      router.push('/cart');
     }
+  }, [searchParams, clearCart, toast]);
+  
+  const handleReturnToHome = () => {
+    router.push('/');
+  };
+  
+  const handleViewCourses = () => {
+    router.push('/my-courses');
   };
 
   return (
@@ -208,45 +265,22 @@ function ConfirmationContent() {
         )}
       </CardContent>
       
-      <CardFooter className="flex justify-center">
-        <Button 
-          onClick={handleContinue} 
-          disabled={status === 'loading'}
-        >
-          {status === 'success' ? 'Ver mis cursos' : 'Volver al carrito'}
-        </Button>
+      <CardFooter className="flex flex-col gap-2">
+        {status === 'success' ? (
+          <>
+            <Button onClick={handleViewCourses} className="w-full">
+              Ver mis cursos
+            </Button>
+            <Button onClick={handleReturnToHome} variant="outline" className="w-full">
+              Volver al inicio
+            </Button>
+          </>
+        ) : status === 'error' ? (
+          <Button onClick={handleReturnToHome} className="w-full">
+            Volver al inicio
+          </Button>
+        ) : null}
       </CardFooter>
     </Card>
-  );
-}
-
-// Componente fallback para Suspense
-function ConfirmationFallback() {
-  return (
-    <Card className="max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-center">
-          Cargando datos de pago
-        </CardTitle>
-        <CardDescription className="text-center">
-          Por favor espera mientras cargamos la información de tu pago.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <Loader2 className="h-16 w-16 text-primary animate-spin" />
-        <p className="mt-4 text-center">Cargando...</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Componente principal que envuelve todo con Suspense
-export default function ConfirmationPage() {
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <Suspense fallback={<ConfirmationFallback />}>
-        <ConfirmationContent />
-      </Suspense>
-    </div>
   );
 } 

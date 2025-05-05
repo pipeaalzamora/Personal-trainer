@@ -1,20 +1,17 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+// Inicializar Resend con la API key
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 type EmailPayload = {
   to: string;
   subject: string;
   html: string;
-};
-
-// Configuración del transportador de correo
-const smtpOptions = {
-  host: process.env.EMAIL_SERVER || '',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: parseInt(process.env.EMAIL_PORT || '587') === 465,
-  auth: {
-    user: process.env.EMAIL_USER || '',
-    pass: process.env.EMAIL_PASSWORD || '',
-  },
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 };
 
 export const sendVerificationEmail = async (
@@ -49,9 +46,14 @@ export const sendOrderConfirmationEmail = async (
     buyOrder: string;
     courseTitles: string[];
     totalAmount: number;
+    attachments?: Array<{
+      filename: string;
+      content: Buffer;
+      contentType?: string;
+    }>;
   }
 ): Promise<boolean> => {
-  const { orderId, buyOrder, courseTitles, totalAmount } = orderDetails;
+  const { orderId, buyOrder, courseTitles, totalAmount, attachments } = orderDetails;
   
   const coursesList = courseTitles.map(title => `<li style="margin-bottom: 8px;">${title}</li>`).join('');
   const date = new Date().toLocaleDateString('es-ES', { 
@@ -85,13 +87,8 @@ export const sendOrderConfirmationEmail = async (
           ${coursesList}
         </ul>
         
-        <p>Puedes acceder a tus cursos iniciando sesión en nuestra plataforma con el email: <strong>${email}</strong></p>
-        
-        <div style="margin: 30px 0; text-align: center;">
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL}/my-courses" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Ver mis cursos</a>
-        </div>
-        
-        <p>Si tienes alguna consulta sobre tu compra o necesitas ayuda con los cursos, no dudes en contactarnos respondiendo a este correo.</p>
+        <p>¡Gracias por tu compra! Adjunto a este correo encontrarás los archivos de los cursos que has adquirido.</p>
+        <p>Si tienes alguna duda sobre cómo utilizar los materiales, no dudes en contactarnos.</p>
         
         <p style="margin-top: 30px;">¡Éxito en tu entrenamiento!</p>
         <p style="margin: 0;">Saludos,<br><strong>El equipo de Coach Inostroza</strong></p>
@@ -108,6 +105,7 @@ export const sendOrderConfirmationEmail = async (
     to: email,
     subject: 'Confirmación de compra - Coach Inostroza',
     html,
+    attachments
   });
 };
 
@@ -163,15 +161,39 @@ export const sendPaymentReceiptEmail = async (
 };
 
 export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
-  const transporter = nodemailer.createTransport(smtpOptions);
-  
   try {
-    const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Coach Inostroza" <no-reply@coachinostroza.com>',
-      ...data,
+    // Formatear los archivos adjuntos para Resend si existen
+    const attachments = data.attachments ? data.attachments.map(attachment => ({
+      filename: attachment.filename,
+      content: attachment.content.toString('base64'),
+      type: attachment.contentType || 'application/octet-stream'
+    })) : undefined;
+    
+    // Registrar si hay archivos adjuntos
+    if (attachments && attachments.length > 0) {
+      console.log(`Enviando email con ${attachments.length} archivos adjuntos`);
+      for (const attachment of attachments) {
+        console.log(`- Archivo adjunto: ${attachment.filename}, tipo: ${attachment.type}`);
+      }
+    } else {
+      console.log('Enviando email sin archivos adjuntos');
+    }
+    
+    // Enviar el email con Resend usando la dirección de onboarding predeterminada
+    const { data: emailData, error } = await resend.emails.send({
+      from: 'onboarding@resend.dev',
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+      attachments: attachments
     });
     
-    console.log(`Email sent: ${info.messageId}`);
+    if (error) {
+      console.error('Error sending email:', error);
+      return false;
+    }
+    
+    console.log(`Email sent: ${emailData?.id}`);
     return true;
   } catch (error) {
     console.error('Error sending email:', error);

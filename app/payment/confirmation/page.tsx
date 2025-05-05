@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
+import { getCoursesExcelFiles } from "@/lib/supabase-api";
 
 // Definir la estructura de la respuesta de Transbank
 interface TransactionResponse {
@@ -147,24 +148,78 @@ function ConfirmationContent() {
                   }),
                 });
                 
-                // 2. Luego enviar la confirmación de compra
+                // 2. Obtener los IDs de los cursos comprados
+                const courseIds = cart.map((course: any) => course.id);
                 const courseTitles = cart.map((course: any) => course.title);
                 
-                await fetch('/api/auth/send-order-email', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    email,
-                    orderId: `ORD-${Date.now()}`, // Generar un ID de orden único
-                    buyOrder: data.buy_order,
-                    courseTitles,
-                    totalAmount: data.amount
-                  }),
-                });
-                
-                console.log('Emails de confirmación enviados correctamente');
+                // 3. Obtener los archivos Excel de los cursos
+                try {
+                  // Llamada a la API para obtener los archivos
+                  const response = await fetch('/api/courses/get-excel-files', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ courseIds }),
+                  });
+                  
+                  if (response.ok) {
+                    const { attachments } = await response.json();
+                    
+                    // 4. Enviar correo de confirmación con los archivos adjuntos
+                    await fetch('/api/auth/send-order-email', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        email,
+                        orderId: `ORD-${Date.now()}`,
+                        buyOrder: data.buy_order,
+                        courseTitles,
+                        totalAmount: data.amount,
+                        attachments
+                      }),
+                    });
+                    
+                    console.log('Emails de confirmación enviados correctamente con archivos adjuntos');
+                  } else {
+                    // Si falla la obtención de archivos, enviar correo sin adjuntos
+                    console.error('Error al obtener archivos Excel:', await response.text());
+                    await fetch('/api/auth/send-order-email', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        email,
+                        orderId: `ORD-${Date.now()}`,
+                        buyOrder: data.buy_order,
+                        courseTitles,
+                        totalAmount: data.amount
+                      }),
+                    });
+                    
+                    console.log('Email de confirmación enviado sin archivos adjuntos');
+                  }
+                } catch (excelError) {
+                  console.error('Error al procesar archivos Excel:', excelError);
+                  
+                  // Enviar correo sin archivos adjuntos
+                  await fetch('/api/auth/send-order-email', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      email,
+                      orderId: `ORD-${Date.now()}`,
+                      buyOrder: data.buy_order,
+                      courseTitles,
+                      totalAmount: data.amount
+                    }),
+                  });
+                }
               } catch (emailError) {
                 console.error('Error al procesar el envío de email:', emailError);
                 // No interrumpimos el flujo principal si falla el envío de email
@@ -212,10 +267,6 @@ function ConfirmationContent() {
   
   const handleReturnToHome = () => {
     router.push('/');
-  };
-  
-  const handleViewCourses = () => {
-    router.push('/my-courses');
   };
 
   return (
@@ -267,14 +318,9 @@ function ConfirmationContent() {
       
       <CardFooter className="flex flex-col gap-2">
         {status === 'success' ? (
-          <>
-            <Button onClick={handleViewCourses} className="w-full">
-              Ver mis cursos
-            </Button>
-            <Button onClick={handleReturnToHome} variant="outline" className="w-full">
-              Volver al inicio
-            </Button>
-          </>
+          <Button onClick={handleReturnToHome} className="w-full">
+            Volver al inicio
+          </Button>
         ) : status === 'error' ? (
           <Button onClick={handleReturnToHome} className="w-full">
             Volver al inicio

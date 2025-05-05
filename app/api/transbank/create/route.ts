@@ -163,13 +163,22 @@ export async function POST(request: Request) {
     let orderId = null;
     if (userId) {
       try {
+        // Preparar datos adicionales para la transacción (incluyendo el email)
+        const sessionData = {
+          email: email,
+          cart: cart || [],
+          timestamp: new Date().toISOString()
+        };
+
         const order = await createOrder(
           userId,
           amountInteger,
           buy_order,
           session_id,
           token,
-          'INITIATED'
+          'INITIATED',
+          // Incluir los datos de sesión en la respuesta
+          { sessionData }
         );
         
         orderId = order.id;
@@ -183,7 +192,9 @@ export async function POST(request: Request) {
             token,
             amount: amountInteger,
             timestamp: new Date().toISOString(),
-            user_id: userId
+            user_id: userId,
+            email: email,
+            sessionData
           }
         );
         

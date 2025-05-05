@@ -45,12 +45,12 @@ export default function Home() {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-8">
-        <GenderSelectionModal onGenderSelect={handleGenderSelect} />
-        
-        <TrainerProfile />
+    <div className="container mx-auto px-4 py-8">
+      <GenderSelectionModal onGenderSelect={handleGenderSelect} />
+      
+      <TrainerProfile />
 
-        {categories.map((category) => (
+      {categories.map((category) => (
           <CourseCategory
             key={category}
             title={category}
@@ -58,8 +58,8 @@ export default function Home() {
             courses={courses.filter((course) => course.category === category)}
             isFemale={isFemale}
           />
-        ))}
-      </div>
+              ))}
+          </div>
     </>
   )
 }

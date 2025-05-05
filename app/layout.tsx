@@ -47,28 +47,28 @@ export default function RootLayout({
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">
-            <div className="container mx-auto flex justify-between items-center">
-              <div className="w-10"></div>
-              <Link href="/" className="flex items-center justify-center">
-                <Image 
-                  src={logo} 
-                  alt="CoachInostroza Logo" 
-                  width={150} 
-                  height={150} 
-                  className="rounded-full"
-                />
-              </Link>
-              <div className="flex gap-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="w-10"></div>
+            <Link href="/" className="flex items-center justify-center">
+              <Image 
+                src={logo} 
+                alt="CoachInostroza Logo" 
+                width={150} 
+                height={150} 
+                className="rounded-full"
+              />
+            </Link>
+            <div className="flex gap-4">
                 <CartIcon />
-              </div>
             </div>
-          </nav>
+          </div>
+        </nav>
           <main className="flex-grow">
             <Suspense fallback={<GlobalLoadingFallback />}>
-              {children}
+        {children}
             </Suspense>
           </main>
-          <Footer/>
+        <Footer/>
         </CartProvider>
         <Toaster />
       </body>

@@ -24,7 +24,8 @@ export async function POST(request: Request) {
       orderId,
       buyOrder, 
       courseTitles, 
-      totalAmount 
+      totalAmount,
+      attachments
     } = await request.json();
     
     if (!email || !orderId || !buyOrder || !courseTitles || !totalAmount) {
@@ -37,6 +38,34 @@ export async function POST(request: Request) {
       );
     }
     
+    // Convertir los attachments de base64 a Buffer si existen
+    let processedAttachments;
+    if (attachments && Array.isArray(attachments)) {
+      try {
+        processedAttachments = attachments.map(attachment => {
+          // Si el contenido ya está en formato Buffer, usarlo directamente
+          let content = attachment.content;
+          
+          // Si es una cadena base64, convertirla a Buffer
+          if (typeof attachment.content === 'string') {
+            content = Buffer.from(attachment.content, 'base64');
+          }
+          
+          return {
+            filename: attachment.filename,
+            content,
+            contentType: attachment.contentType
+          };
+        });
+        
+        console.log(`Preparados ${processedAttachments.length} archivos adjuntos para enviar por email`);
+      } catch (attachError) {
+        console.error('Error al procesar archivos adjuntos:', attachError);
+        // Continuar sin archivos adjuntos
+        processedAttachments = undefined;
+      }
+    }
+    
     // Enviar email de confirmación
     const emailSent = await sendOrderConfirmationEmail(
       email,
@@ -44,7 +73,8 @@ export async function POST(request: Request) {
         orderId,
         buyOrder,
         courseTitles,
-        totalAmount
+        totalAmount,
+        attachments: processedAttachments
       }
     );
     
@@ -57,7 +87,11 @@ export async function POST(request: Request) {
     }
     
     return NextResponse.json(
-      { success: true, message: 'Email de confirmación enviado correctamente' },
+      { 
+        success: true, 
+        message: 'Email de confirmación enviado correctamente',
+        withAttachments: !!processedAttachments
+      },
       { headers: corsHeaders }
     );
     

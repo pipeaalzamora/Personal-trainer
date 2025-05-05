@@ -69,30 +69,30 @@ export default function MyCourses() {
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-8 text-white">Mis Cursos</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {purchasedCourses.map((course) => (
           <Card key={course.id} className="bg-gradient-to-b from-red-500 to-black">
             <CardHeader>
               <div className="relative w-full aspect-video mb-4">
-                <Image
+                  <Image
                   src={typeof course.image === 'string' ? course.image : course.image.src}
-                  alt={course.title}
-                  fill
+                    alt={course.title}
+                    fill
                   className="object-cover rounded-md"
                 />
               </div>
               <CardTitle className="text-white">{course.title}</CardTitle>
-            </CardHeader>
+              </CardHeader>
             <CardContent className="text-gray-200">
               <p className="mb-2 line-clamp-2">{course.description}</p>
               <p className="text-sm">Duración: {course.duration}</p>
-            </CardContent>
+              </CardContent>
             <CardFooter>
               <Button className="w-full">Acceder al Curso</Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
     </div>
   );
 } 

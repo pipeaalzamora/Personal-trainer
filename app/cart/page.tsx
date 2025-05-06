@@ -202,7 +202,7 @@ export default function CartPage() {
               {cart.map((course) => (
                 <div key={course.id} className="flex justify-between items-center mb-4">
                   <span>{course.title}</span>
-                  <span>${course.price.toFixed(2)}</span>
+                  <span>CLP ${course.price.toLocaleString('es-CL')}</span>
                   <Button 
                     variant="outline"
                     size="sm"
@@ -213,7 +213,7 @@ export default function CartPage() {
                 </div>
               ))}
               <div className="border-t pt-4 mt-4">
-                <p className="font-bold text-lg">Total: ${totalPrice.toFixed(2)}</p>
+                <p className="font-bold text-lg">Total: CLP ${totalPrice.toLocaleString('es-CL')}</p>
               </div>
             </>
           )}

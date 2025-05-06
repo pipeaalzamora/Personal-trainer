@@ -64,9 +64,10 @@ export const sendOrderConfirmationEmail = async (
     minute: '2-digit'
   });
   
+  // Plantilla HTML optimizada para iCloud
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-      <div style="background: linear-gradient(to right, #dc2626, #000000); padding: 20px; text-align: center;">
+      <div style="background-color: #dc2626; padding: 20px; text-align: center;">
         <h1 style="color: white; margin: 0; padding: 0;">Coach Inostroza</h1>
       </div>
       
@@ -79,7 +80,7 @@ export const sendOrderConfirmationEmail = async (
           <p style="margin: 8px 0;"><strong>Número de orden:</strong> ${orderId}</p>
           <p style="margin: 8px 0;"><strong>Referencia de pago:</strong> ${buyOrder}</p>
           <p style="margin: 8px 0;"><strong>Fecha de compra:</strong> ${date}</p>
-          <p style="margin: 8px 0;"><strong>Monto total:</strong> $${totalAmount.toLocaleString('es-CL')}</p>
+          <p style="margin: 8px 0;"><strong>Monto total:</strong> CLP $${totalAmount.toLocaleString('es-CL')}</p>
         </div>
         
         <h3 style="color: #dc2626; border-bottom: 1px solid #e5e5e5; padding-bottom: 8px;">Cursos adquiridos:</h3>
@@ -121,9 +122,10 @@ export const sendPaymentReceiptEmail = async (
 ): Promise<boolean> => {
   const { transactionId, cardNumber, amount, date, authCode } = transactionData;
   
+  // Plantilla HTML optimizada para iCloud
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
-      <div style="background: linear-gradient(to right, #dc2626, #000000); padding: 20px; text-align: center;">
+      <div style="background-color: #dc2626; padding: 20px; text-align: center;">
         <h1 style="color: white; margin: 0; padding: 0;">Coach Inostroza</h1>
       </div>
       
@@ -135,7 +137,7 @@ export const sendPaymentReceiptEmail = async (
         <div style="background-color: #f4f4f4; padding: 15px; border-radius: 4px; margin: 20px 0;">
           <p style="margin: 8px 0;"><strong>ID de Transacción:</strong> ${transactionId}</p>
           <p style="margin: 8px 0;"><strong>Tarjeta:</strong> **** **** **** ${cardNumber}</p>
-          <p style="margin: 8px 0;"><strong>Monto:</strong> $${amount.toLocaleString('es-CL')}</p>
+          <p style="margin: 8px 0;"><strong>Monto:</strong> CLP $${amount.toLocaleString('es-CL')}</p>
           <p style="margin: 8px 0;"><strong>Fecha:</strong> ${date}</p>
           <p style="margin: 8px 0;"><strong>Código de Autorización:</strong> ${authCode}</p>
         </div>
@@ -179,13 +181,19 @@ export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
       console.log('Enviando email sin archivos adjuntos');
     }
     
-    // Enviar el email con Resend usando la dirección de onboarding predeterminada
+    // Enviar el email con Resend usando el dominio personalizado
     const { data: emailData, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'Equipo Coach Inostroza <no-reply@coachinostroza.cl>',
       to: data.to,
       subject: data.subject,
       html: data.html,
-      attachments: attachments
+      attachments: attachments,
+      // Agregar encabezados adicionales para mejorar la entrega
+      headers: {
+        'Reply-To': 'contacto@coachinostroza.cl',
+        'List-Unsubscribe': `<mailto:unsubscribe@coachinostroza.cl?subject=Unsubscribe&body=Unsubscribe>`,
+        'X-Entity-Ref-ID': `coach-inostroza-${new Date().getTime()}` // ID único para cada correo
+      }
     });
     
     if (error) {

@@ -55,7 +55,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
         <CardContent>
           <p className="mb-4">{course.description}</p>
           <p className="font-semibold text-xl mb-2">
-            Precio: ${course.price}
+            Precio: CLP ${course.price.toLocaleString('es-CL')}
           </p>
           <p className="mb-2">Duración: {course.duration}</p>
         </CardContent>

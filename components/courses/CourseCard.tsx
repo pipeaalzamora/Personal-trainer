@@ -38,7 +38,7 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
       <CardContent className="flex-grow">
         <p className="text-sm mb-2 text-white line-clamp-3">{course.description}</p>
         <div className="flex justify-between items-center mt-2">
-          <p className="font-semibold text-white">${course.price.toFixed(2)}</p>
+          <p className="font-semibold text-white">CLP ${course.price.toLocaleString('es-CL')}</p>
           <p className="text-sm text-white">{course.duration}</p>
         </div>
       </CardContent>

@@ -156,6 +156,10 @@ export async function POST(request: Request) {
               const courseTitles = orderItems.map(item => 
                 item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
               );
+              // Obtener categorías de los cursos
+              const courseCategories = orderItems.map(item => 
+                item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
+              );
               
               // 1. Enviar comprobante de pago
               const receiptSent = await sendPaymentReceiptEmail(
@@ -204,6 +208,7 @@ export async function POST(request: Request) {
                   orderId: updatedOrder.id,
                   buyOrder: data.buy_order,
                   courseTitles,
+                  courseCategories,
                   totalAmount: data.amount,
                   attachments: attachments.length > 0 ? attachments : undefined
                 }

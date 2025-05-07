@@ -45,6 +45,7 @@ export const sendOrderConfirmationEmail = async (
     orderId: string;
     buyOrder: string;
     courseTitles: string[];
+    courseCategories?: string[];
     totalAmount: number;
     attachments?: Array<{
       filename: string;
@@ -53,9 +54,16 @@ export const sendOrderConfirmationEmail = async (
     }>;
   }
 ): Promise<boolean> => {
-  const { orderId, buyOrder, courseTitles, totalAmount, attachments } = orderDetails;
+  const { orderId, buyOrder, courseTitles, courseCategories, totalAmount, attachments } = orderDetails;
   
-  const coursesList = courseTitles.map(title => `<li style="margin-bottom: 8px;">${title}</li>`).join('');
+  // Generar la lista de cursos con sus categorías si están disponibles
+  const coursesList = courseTitles.map((title, index) => {
+    const category = courseCategories && courseCategories[index] ? 
+      `<span style="background-color: #f8d7da; color: #721c24; font-size: 12px; padding: 2px 6px; border-radius: 3px; margin-left: 8px;">${courseCategories[index]}</span>` : 
+      '';
+    return `<li style="margin-bottom: 12px;">${title} ${category}</li>`;
+  }).join('');
+  
   const date = new Date().toLocaleDateString('es-ES', { 
     year: 'numeric', 
     month: 'long', 

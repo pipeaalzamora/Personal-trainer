@@ -3,6 +3,7 @@ import { config } from '@/config/config';
 import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCoursesExcelFiles } from '@/lib/supabase-api';
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
 import { supabase } from '@/lib/supabase';
+import { enqueueMessage } from '@/lib/queue';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -73,15 +74,64 @@ export async function POST(request: Request) {
       // Continuar para devolver respuesta al cliente
     }
     
-    // IMPORTANTE: En lugar de procesar todo aquí, delegamos el procesamiento de emails 
-    // y archivos a una función asíncrona que se ejecutará después de devolver la respuesta
-    
-    // Iniciar el procesamiento posterior de forma asíncrona
+    // Si la transacción fue exitosa, encolar el procesamiento de emails y archivos
     if (updatedOrder && status === 'COMPLETED') {
-      // Esta función se ejecutará después de que hayamos respondido al cliente
-      processPurchaseCompletionAsync(updatedOrder, data).catch(error => 
-        console.error('❌ Error en procesamiento asíncrono:', error)
-      );
+      try {
+        // Determinar el email del usuario
+        let email = null;
+        
+        // Intentar obtener email de múltiples fuentes
+        const transactionResponse = updatedOrder.transaction_response;
+        if (transactionResponse && 
+            typeof transactionResponse === 'object' && 
+            'sessionData' in transactionResponse && 
+            transactionResponse.sessionData && 
+            typeof transactionResponse.sessionData === 'object' && 
+            'email' in transactionResponse.sessionData) {
+          email = transactionResponse.sessionData.email as string;
+        }
+        
+        if (!email && updatedOrder.user_id) {
+          // Buscar email por user_id
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email')
+            .eq('id', updatedOrder.user_id)
+            .single();
+            
+          email = userData?.email;
+        }
+        
+        // Última opción: revisar session_id
+        if (!email && updatedOrder.session_id && updatedOrder.session_id.includes('@')) {
+          const sessionParts = updatedOrder.session_id.split('-');
+          email = sessionParts[0].includes('@') ? sessionParts[0] : null;
+        }
+        
+        if (email) {
+          // Encolar el mensaje para procesamiento asíncrono
+          const messageId = await enqueueMessage('process-transaction', {
+            orderId: updatedOrder.id,
+            buyOrder: data.buy_order,
+            email,
+            transactionData: data
+          });
+          
+          console.log(`✅ Procesamiento de emails y archivos encolado: ${messageId}`);
+          
+          // Registrar en el historial de forma asíncrona sin bloquear
+          addOrderTransactionHistory(
+            updatedOrder.id,
+            'QUEUED_FOR_PROCESSING', 
+            { messageId }
+          ).catch(err => console.error('Error al registrar en historial:', err));
+        } else {
+          console.warn('⚠️ No se pudo determinar el email para enviar notificaciones');
+        }
+      } catch (queueError) {
+        console.error('❌ Error al encolar procesamiento:', queueError);
+        // No bloqueamos la respuesta al cliente si falla el encolamiento
+      }
     }
     
     // Devolver respuesta inmediatamente al cliente

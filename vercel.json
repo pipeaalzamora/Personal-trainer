@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/queue/process",
+      "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/queue/cleanup",
+      "schedule": "0 0 * * 0"
+    }
+  ]
+} 

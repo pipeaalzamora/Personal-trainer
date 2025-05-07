@@ -179,16 +179,6 @@ export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
       type: attachment.contentType || 'application/octet-stream'
     })) : undefined;
     
-    // Registrar si hay archivos adjuntos
-    if (attachments && attachments.length > 0) {
-      console.log(`Enviando email con ${attachments.length} archivos adjuntos`);
-      for (const attachment of attachments) {
-        console.log(`- Archivo adjunto: ${attachment.filename}, tipo: ${attachment.type}`);
-      }
-    } else {
-      console.log('Enviando email sin archivos adjuntos');
-    }
-    
     // Enviar el email con Resend usando el dominio personalizado
     const { data: emailData, error } = await resend.emails.send({
       from: 'Coach Inostroza <no-reply@coachinostroza.cl>',
@@ -209,7 +199,6 @@ export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
       return false;
     }
     
-    console.log(`Email sent: ${emailData?.id}`);
     return true;
   } catch (error) {
     console.error('Error sending email:', error);

@@ -230,9 +230,6 @@ export async function updateOrderTransaction(
   transactionData: any,
   token: string = ''
 ): Promise<Order> {
-  console.log(`updateOrderTransaction: Actualizando orden ${buyOrder} a estado ${status}`);
-
-  // Verificar si la orden existe
   const { data: existingOrder, error: findError } = await supabase
     .from('orders')
     .select('*')
@@ -240,34 +237,25 @@ export async function updateOrderTransaction(
     .single();
 
   if (findError) {
-    console.error(`Error al buscar orden con buy_order=${buyOrder}:`, findError);
     throw findError;
   }
 
   if (!existingOrder) {
-    console.error(`No se encontró ninguna orden con buy_order=${buyOrder}`);
     throw new Error(`No se encontró la orden con buy_order=${buyOrder}`);
   }
 
-  console.log(`updateOrderTransaction: Orden encontrada con ID=${existingOrder.id}, estado actual=${existingOrder.status}`);
-
-  // Preparar los datos para la actualización
   const updateData: any = {
     status: status,
     updated_at: new Date().toISOString()
   };
 
-  // Actualizar el token sólo si se proporciona
   if (token) {
     updateData.transaction_token = token;
   }
 
-  // Actualizar los datos de la transacción si se proporcionan
   if (transactionData && Object.keys(transactionData).length > 0) {
     updateData.transaction_response = transactionData;
   }
-
-  console.log(`updateOrderTransaction: Actualizando datos:`, updateData);
 
   const { data, error } = await supabase
     .from('orders')
@@ -277,12 +265,9 @@ export async function updateOrderTransaction(
     .single();
   
   if (error) {
-    console.error(`Error al actualizar orden con buy_order=${buyOrder}:`, error);
     throw error;
   }
 
-  console.log(`updateOrderTransaction: Orden actualizada correctamente, nuevo estado=${data.status}`);
-  
   return data;
 }
 
@@ -291,16 +276,11 @@ export async function createOrderItems(
   orderId: string,
   items: { course_id: string, price: number }[]
 ): Promise<OrderItem[]> {
-  console.log('📝 Creando items para orden:', orderId);
-  console.log('📦 Items a insertar:', JSON.stringify(items, null, 2));
-
   const orderItems: OrderItemInsert[] = items.map(item => ({
     order_id: orderId,
     course_id: item.course_id,
     price: item.price
   }));
-  
-  console.log('🔄 Datos formateados para insertar:', JSON.stringify(orderItems, null, 2));
   
   const { data, error } = await supabase
     .from('order_items')
@@ -308,11 +288,9 @@ export async function createOrderItems(
     .select();
   
   if (error) {
-    console.error('❌ Error al crear items de orden:', error);
     throw error;
   }
   
-  console.log('✅ Items creados exitosamente:', JSON.stringify(data, null, 2));
   return data;
 }
 
@@ -516,8 +494,6 @@ export async function getCourseExcelFile(
   phase: string = "Fase 1"
 ): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
   try {
-    console.log(`🔍 Buscando archivo Excel para curso: ${courseId}, fase: ${phase}`);
-    
     // Obtener información del curso
     const { data: course } = await supabase
       .from('courses')
@@ -526,7 +502,6 @@ export async function getCourseExcelFile(
       .single();
     
     if (!course) {
-      console.error(`❌ No se encontró curso con ID: ${courseId}`);
       return { data: null, filename: null, contentType: null };
     }
     
@@ -538,8 +513,6 @@ export async function getCourseExcelFile(
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
     
-    console.log(`🔍 Buscando en categoría: ${categoryFolder}`);
-    
     // Extraer el número de fase del título del curso
     const phaseMatch = course.title.match(/fase\s+(\w+):|fase\s+(\w+)|fase-(\w+)|fase(\w+)/i);
     let phaseIdentifier = "";
@@ -547,15 +520,12 @@ export async function getCourseExcelFile(
     if (phaseMatch) {
       // Si el título contiene "Fase X", usar ese número/identificador
       phaseIdentifier = (phaseMatch[1] || phaseMatch[2] || phaseMatch[3] || phaseMatch[4]).toLowerCase();
-      console.log(`📋 Fase extraída del título: ${phaseIdentifier}`);
     } else if (course.title.toLowerCase().includes('pack') || course.title.toLowerCase().includes('completo')) {
       // Si es un pack completo, usar "completo"
       phaseIdentifier = "completo";
-      console.log(`📋 Curso identificado como pack completo`);
     } else {
       // Si no se puede determinar, usar un valor predeterminado
       phaseIdentifier = "i";
-      console.log(`📋 No se pudo extraer fase del título, usando valor predeterminado: ${phaseIdentifier}`);
     }
     
     // Posibles nombres de carpetas de fase basados en el identificador de fase
@@ -568,8 +538,6 @@ export async function getCourseExcelFile(
       `pack-completo`,
     ];
     
-    console.log(`📋 Probando posibles carpetas de fase: ${possiblePhaseFolders.join(', ')}`);
-    
     // Primero listar las carpetas en la categoría
     const { data: subfolders, error: subfoldersError } = await supabase
       .storage
@@ -577,17 +545,14 @@ export async function getCourseExcelFile(
       .list(categoryFolder);
     
     if (subfoldersError) {
-      console.error(`❌ Error al listar subcarpetas en ${categoryFolder}:`, subfoldersError);
       // Intentar con estructura antigua si falla
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
     if (!subfolders || subfolders.length === 0) {
-      console.log(`⚠️ No se encontraron subcarpetas en ${categoryFolder}, probando estructura antigua.`);
+      // Intentar con estructura antigua si falla
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
-    
-    console.log(`📂 Subcarpetas encontradas en ${categoryFolder}:`, subfolders.map(f => f.name));
     
     // Buscar la carpeta de fase que mejor coincida
     let matchedPhaseFolder = null;
@@ -596,7 +561,6 @@ export async function getCourseExcelFile(
     for (const folderName of possiblePhaseFolders) {
       const match = subfolders.find(f => f.name.toLowerCase() === folderName);
       if (match) {
-        console.log(`✅ Carpeta encontrada: ${match.name}`);
         matchedPhaseFolder = match.name;
         break;
       }
@@ -612,7 +576,6 @@ export async function getCourseExcelFile(
             (phaseIdentifier === "i" && lowerName.includes("iniciacion")) ||
             (phaseIdentifier === "ii" && lowerName.includes("progresion")) ||
             (phaseIdentifier === "iii" && lowerName.includes("maestria"))) {
-          console.log(`✅ Carpeta coincidente encontrada: ${subfolder.name}`);
           matchedPhaseFolder = subfolder.name;
           break;
         }
@@ -623,23 +586,20 @@ export async function getCourseExcelFile(
     if (!matchedPhaseFolder) {
       const anyPhaseFolder = subfolders.find(f => f.name.toLowerCase().includes('fase'));
       if (anyPhaseFolder) {
-        console.log(`⚠️ Usando carpeta de fase alternativa: ${anyPhaseFolder.name}`);
         matchedPhaseFolder = anyPhaseFolder.name;
       } else if (subfolders.length > 0) {
         // Si no hay carpetas con "fase", usar la primera carpeta disponible
-        console.log(`⚠️ Usando primera carpeta disponible: ${subfolders[0].name}`);
         matchedPhaseFolder = subfolders[0].name;
       }
     }
     
     if (!matchedPhaseFolder) {
-      console.log(`❌ No se encontró carpeta adecuada para la fase, probando estructura antigua.`);
+      // Intentar con estructura antigua si falla
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
     // Ahora buscar archivos Excel en la carpeta de fase
     const folderPath = `${categoryFolder}/${matchedPhaseFolder}`;
-    console.log(`🔎 Buscando archivos Excel en: ${folderPath}`);
     
     const { data: files, error: filesError } = await supabase
       .storage
@@ -647,7 +607,7 @@ export async function getCourseExcelFile(
       .list(folderPath);
     
     if (filesError || !files || files.length === 0) {
-      console.log(`⚠️ No se encontraron archivos en ${folderPath}, probando estructura antigua.`);
+      // Intentar con estructura antigua si falla
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
@@ -657,11 +617,9 @@ export async function getCourseExcelFile(
     );
     
     if (excelFiles.length === 0) {
-      console.log(`⚠️ No se encontraron archivos Excel en ${folderPath}, probando estructura antigua.`);
+      // Intentar con estructura antigua si falla
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
-    
-    console.log(`📂 Archivos Excel encontrados en ${folderPath}:`, excelFiles.map(f => f.name));
     
     // Elegir el archivo más relevante, priorizando:
     // 1. Coincidencia exacta con la fase
@@ -679,7 +637,6 @@ export async function getCourseExcelFile(
     );
     
     if (exactMatchFile) {
-      console.log(`✅ Archivo exacto encontrado: ${exactMatchFile.name}`);
       targetExcelFile = exactMatchFile;
     } else {
       // Buscar cualquier archivo con "Fase" + identificador
@@ -693,18 +650,15 @@ export async function getCourseExcelFile(
       );
       
       if (phaseFile) {
-        console.log(`✅ Archivo de fase encontrado: ${phaseFile.name}`);
         targetExcelFile = phaseFile;
       } else {
         // Usar el primer archivo Excel
-        console.log(`⚠️ Usando primer archivo Excel disponible: ${excelFiles[0].name}`);
         targetExcelFile = excelFiles[0];
       }
     }
     
     // Descargar el archivo seleccionado
     const filePath = `${folderPath}/${targetExcelFile.name}`;
-    console.log(`📥 Descargando archivo: ${filePath}`);
     
     const { data: fileData, error: downloadError } = await supabase
       .storage
@@ -712,19 +666,15 @@ export async function getCourseExcelFile(
       .download(filePath);
     
     if (downloadError) {
-      console.error(`❌ Error al descargar archivo: ${filePath}`, downloadError);
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
     if (!fileData) {
-      console.log(`❌ No se pudo descargar el archivo: ${filePath}`);
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
     // Convertir el archivo a Buffer
     const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
-    
-    console.log(`✅ Archivo descargado exitosamente: ${filePath} (${buffer.length} bytes)`);
     
     // Determinar el tipo de contenido basado en la extensión
     const contentType = targetExcelFile.name.endsWith('.xlsx') 
@@ -737,12 +687,10 @@ export async function getCourseExcelFile(
       contentType
     };
   } catch (error) {
-    console.error(`❌ Error al obtener archivo Excel: ${error}`);
     // Intentar con la función original como fallback
     try {
       return await originalGetCourseExcelFile(courseId, category, phase);
     } catch (fallbackError) {
-      console.error(`❌ Error en fallback: ${fallbackError}`);
       return { data: null, filename: null, contentType: null };
     }
   }
@@ -759,7 +707,6 @@ async function originalGetCourseExcelFile(
     const courseInfo = await getCourseNameAndCategory(courseId);
     
     if (!courseInfo) {
-      console.warn(`No se pudo obtener información del curso ${courseId}`);
       return { data: null, filename: null, contentType: null };
     }
     
@@ -776,7 +723,6 @@ async function originalGetCourseExcelFile(
     }
     
     // Luego, buscar dentro de la categoría en fase 1
-    console.log(`Buscando en ruta: ${FASE_PRINCIPAL}/${categoryToUse}`);
     const result = await getCourseExcelFileFromPath(`${FASE_PRINCIPAL}/${categoryToUse}`, phase);
     
     if (result.data) {
@@ -784,7 +730,6 @@ async function originalGetCourseExcelFile(
     }
     
     // Si no, buscar en la subcarpeta con el nombre del curso dentro de la categoría
-    console.log(`Buscando en ruta: ${FASE_PRINCIPAL}/${categoryToUse}/${courseInfo.name}`);
     const courseResult = await getCourseExcelFileFromPath(`${FASE_PRINCIPAL}/${categoryToUse}/${courseInfo.name}`, phase);
     
     if (courseResult.data) {
@@ -792,7 +737,6 @@ async function originalGetCourseExcelFile(
     }
     
     // Finalmente, intentar buscar directamente dentro de la subcarpeta "fase" correspondiente
-    console.log(`Buscando en ruta: ${FASE_PRINCIPAL}/${phase.toLowerCase()}`);
     return await getCourseExcelFileFromPath(`${FASE_PRINCIPAL}/${phase.toLowerCase()}`, "");
   } catch (error) {
     console.error(`Error al obtener archivo Excel para curso ${courseId}:`, error);
@@ -806,8 +750,6 @@ async function getCourseExcelFileFromPath(
   phase: string = "Fase 1"
 ): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
   try {
-    console.log(`🔎 Explorando ruta: ${coursePath}`);
-    
     // Listar contenido de la carpeta
     const { data: files, error } = await supabase
       .storage
@@ -818,16 +760,12 @@ async function getCourseExcelFileFromPath(
       });
     
     if (error) {
-      console.error(`❌ Error al listar archivos para ruta ${coursePath}:`, error);
       throw error;
     }
     
     if (!files || files.length === 0) {
-      console.warn(`⚠️ No se encontraron archivos para la ruta ${coursePath}`);
       return { data: null, filename: null, contentType: null };
     }
-    
-    console.log(`📂 Contenido de ${coursePath}:`, files.map(f => `${f.name} (${f.metadata?.mimetype || 'carpeta?'})`));
     
     let excelFile = null;
     
@@ -840,7 +778,6 @@ async function getCourseExcelFileFromPath(
       );
       
       if (exactPhaseMatch) {
-        console.log(`✅ Coincidencia exacta encontrada: ${exactPhaseMatch.name}`);
         excelFile = exactPhaseMatch;
       } else {
         // 2. Buscar coincidencia insensible a mayúsculas/minúsculas
@@ -850,7 +787,6 @@ async function getCourseExcelFileFromPath(
         );
         
         if (caseInsensitiveMatch) {
-          console.log(`✅ Coincidencia insensible a mayúsculas encontrada: ${caseInsensitiveMatch.name}`);
           excelFile = caseInsensitiveMatch;
         }
       }
@@ -864,7 +800,6 @@ async function getCourseExcelFileFromPath(
       );
       
       if (anyExcelFile) {
-        console.log(`✅ Archivo Excel encontrado: ${anyExcelFile.name}`);
         excelFile = anyExcelFile;
       }
     }
@@ -877,18 +812,14 @@ async function getCourseExcelFileFromPath(
       );
       
       if (phaseFolder) {
-        console.log(`📁 Carpeta de fase encontrada: ${phaseFolder.name}, explorando dentro...`);
         // Si encontramos una carpeta de fase, buscamos dentro de ella
         return getCourseExcelFileFromPath(`${coursePath}/${phaseFolder.name}`, "");
       }
     }
     
     if (!excelFile) {
-      console.warn(`❌ No se encontraron archivos Excel en la ruta ${coursePath}`);
       return { data: null, filename: null, contentType: null };
     }
-    
-    console.log(`📄 Archivo Excel encontrado para descargar: ${coursePath}/${excelFile.name}`);
     
     // Obtener URL pública para descargar el archivo
     const filePath = `${coursePath}/${excelFile.name}`;
@@ -900,12 +831,10 @@ async function getCourseExcelFileFromPath(
       .download(filePath);
     
     if (downloadError) {
-      console.error(`❌ Error al descargar archivo Excel para ruta ${filePath}:`, downloadError);
       throw downloadError;
     }
     
     if (!data) {
-      console.warn(`⚠️ No se pudo descargar el archivo Excel para la ruta ${filePath}`);
       return { data: null, filename: null, contentType: null };
     }
     
@@ -917,15 +846,12 @@ async function getCourseExcelFileFromPath(
     // Convertir el archivo a Buffer
     const buffer = await data.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
     
-    console.log(`✅ Archivo descargado exitosamente: ${filePath} (${buffer.length} bytes)`);
-    
     return { 
       data: buffer, 
       filename: excelFile.name,
       contentType
     };
   } catch (error) {
-    console.error(`❌ Error al obtener archivo Excel desde ${coursePath}:`, error);
     return { data: null, filename: null, contentType: null };
   }
 }
@@ -951,7 +877,6 @@ export async function getAllExcelFiles(): Promise<Array<{
       });
     
     if (catError) {
-      console.error('Error al listar categorías:', catError);
       throw catError;
     }
     
@@ -1003,8 +928,7 @@ export async function getAllExcelFiles(): Promise<Array<{
         });
       
       if (coursesError) {
-        console.error(`Error al listar cursos para categoría ${category}:`, coursesError);
-        continue;
+        throw coursesError;
       }
       
       // Filtrar solo las carpetas (cursos)
@@ -1023,8 +947,7 @@ export async function getAllExcelFiles(): Promise<Array<{
           });
         
         if (filesError) {
-          console.error(`Error al listar archivos para curso ${courseName} en categoría ${category}:`, filesError);
-          continue;
+          throw filesError;
         }
         
         // Intentar encontrar el ID del curso basado en el nombre formateado o asumir que el nombre de la carpeta es el ID
@@ -1073,7 +996,6 @@ export async function getAllExcelFiles(): Promise<Array<{
     
     return result;
   } catch (error) {
-    console.error('Error al obtener todos los archivos Excel:', error);
     throw error;
   }
 }
@@ -1094,7 +1016,6 @@ export async function uploadCourseExcelFile(
     
     // Construir la ruta del archivo
     const filePath = `${courseInfo.category}/${courseInfo.name}/${fileName}`;
-    console.log(`Subiendo archivo Excel a: ${filePath}`);
     
     // Asegurarse de que la extensión sea la correcta
     const finalFileName = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') 
@@ -1122,7 +1043,6 @@ export async function uploadCourseExcelFile(
     
     return filePath;
   } catch (error) {
-    console.error(`Error al subir archivo Excel para curso ${courseId}:`, error);
     throw error;
   }
 }
@@ -1140,8 +1060,6 @@ export async function associateExcelToCourse(
   }
 ): Promise<boolean> {
   try {
-    console.log(`Asociando archivo Excel ${excelFile.filename} al curso ${courseId}`);
-    
     // Verificar si el curso existe
     const course = await getCourseById(courseId);
     if (!course) {
@@ -1175,7 +1093,6 @@ export async function associateExcelToCourse(
       return false;
     }
     
-    console.log(`Archivo Excel asociado con éxito al curso ${courseId}`);
     return true;
   } catch (error) {
     console.error(`Error al asociar archivo Excel al curso ${courseId}:`, error);

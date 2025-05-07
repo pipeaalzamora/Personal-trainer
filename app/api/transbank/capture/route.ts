@@ -28,13 +28,6 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log('Procesando captura para transacción:', {
-      token,
-      buy_order,
-      authorization_code,
-      capture_amount
-    });
-    
     // URL de la API de captura de Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}/capture`;
     
@@ -55,17 +48,14 @@ export async function POST(request: Request) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error al capturar la transacción:', errorText);
       throw new Error(`Error al capturar la transacción: ${response.status} ${response.statusText}`);
     }
     
     // Devolver respuesta al cliente
     const data = await response.json();
-    console.log('Respuesta de captura:', data);
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
-    console.error('Error en API route:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500, headers: corsHeaders }

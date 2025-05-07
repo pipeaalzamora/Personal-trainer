@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     } catch (historyError) {
       // Solo mostrar error si realmente hay un mensaje de error
       if (historyError && Object.keys(historyError).length > 0) {
-        console.error('Error al registrar historial de transacción:', historyError);
+      console.error('Error al registrar historial de transacción:', historyError);
       }
       // No interrumpimos el flujo principal si falla el registro del historial
     }

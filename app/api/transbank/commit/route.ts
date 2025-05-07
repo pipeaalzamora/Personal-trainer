@@ -228,7 +228,7 @@ export async function POST(request: Request) {
     } catch (dbError) {
       // Solo mostrar error si realmente hay un mensaje de error
       if (dbError && Object.keys(dbError).length > 0) {
-        console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
+      console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
       }
       // No interrumpimos el flujo principal si falla la actualización en BD
     }
@@ -237,7 +237,7 @@ export async function POST(request: Request) {
   } catch (error) {
     // Solo mostrar error si realmente hay un mensaje de error
     if (error && Object.keys(error).length > 0) {
-      console.error('❌ Error en API route:', error);
+    console.error('❌ Error en API route:', error);
     }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },

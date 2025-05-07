@@ -451,7 +451,7 @@ export async function addOrderTransactionHistory(
   if (error) {
     // Solo mostrar error si realmente hay un mensaje de error
     if (Object.keys(error).length > 0) {
-      console.error('Error al agregar historial de transacción:', error);
+    console.error('Error al agregar historial de transacción:', error);
     }
     throw error;
   }
@@ -516,8 +516,87 @@ export async function getCourseExcelFile(
   phase: string = "Fase 1"
 ): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
   try {
-    console.log(`Buscando archivo Excel para curso: ${courseId}, categoría: ${category || 'todas'}, fase: ${phase}`);
+    console.log(`🔍 Buscando archivo Excel para curso: ${courseId}, categoría: ${category || 'todas'}, fase: ${phase}`);
     
+    // Primero intentar buscar directamente en la carpeta raíz
+    let result = await searchExcelInPath("", "Fase1.xlsx");
+    if (result.data) return result;
+    
+    // Luego en la carpeta fase 1
+    result = await searchExcelInPath("fase 1", "Fase1.xlsx");
+    if (result.data) return result;
+    
+    // Probar todas las subcarpetas dentro de fase 1
+    const { data: subfolders, error: subfoldersError } = await supabase
+      .storage
+      .from(BUCKET_COURSE_EXCEL)
+      .list("fase 1");
+      
+    if (subfoldersError) {
+      console.error('❌ Error al listar subcarpetas de fase 1:', subfoldersError);
+    } else if (subfolders) {
+      console.log(`📂 Subcarpetas encontradas en fase 1: ${subfolders.map(f => f.name).join(', ')}`);
+      for (const folder of subfolders) {
+        if (!folder.name) continue;
+        
+        // Buscar Fase1.xlsx en cada subcarpeta
+        result = await searchExcelInPath(`fase 1/${folder.name}`, "Fase1.xlsx");
+        if (result.data) return result;
+        
+        // También buscar variantes del nombre
+        result = await searchExcelInPath(`fase 1/${folder.name}`, "Fase 1.xlsx");
+        if (result.data) return result;
+      }
+    }
+    
+    // Si todavía no encuentra, usar el método original
+    return await originalGetCourseExcelFile(courseId, category, phase);
+  } catch (error) {
+    console.error(`❌ Error al obtener archivo Excel para curso ${courseId}:`, error);
+    return { data: null, filename: null, contentType: null };
+  }
+}
+
+// Función auxiliar para buscar archivos con un nombre específico
+async function searchExcelInPath(path: string, filename: string): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
+  try {
+    console.log(`🔎 Buscando ${filename} en ruta: ${path}`);
+    
+    const { data, error } = await supabase
+      .storage
+      .from(BUCKET_COURSE_EXCEL)
+      .download(path ? `${path}/${filename}` : filename);
+      
+    if (error) {
+      console.log(`❌ No se encontró ${filename} en ${path}: ${error.message}`);
+      return { data: null, filename: null, contentType: null };
+    }
+    
+    if (!data) {
+      console.log(`❌ No se encontró ${filename} en ${path}`);
+      return { data: null, filename: null, contentType: null };
+    }
+    
+    console.log(`✅ Archivo encontrado: ${path}/${filename}`);
+    const buffer = await data.arrayBuffer().then(ab => Buffer.from(ab));
+    return {
+      data: buffer,
+      filename,
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+  } catch (error) {
+    console.error(`❌ Error buscando ${filename} en ${path}:`, error);
+    return { data: null, filename: null, contentType: null };
+  }
+}
+
+// Guardar la función original para usarla como fallback
+async function originalGetCourseExcelFile(
+  courseId: string,
+  category?: string,
+  phase: string = "Fase 1"
+): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
+  try {
     // Obtener el nombre y categoría formateados del curso
     const courseInfo = await getCourseNameAndCategory(courseId);
     

@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
       } catch (orderError) {
         // Solo mostrar error si realmente hay un mensaje de error
         if (orderError && Object.keys(orderError).length > 0) {
-          console.error('Error al crear orden en base de datos:', orderError);
+        console.error('Error al crear orden en base de datos:', orderError);
         }
         // No interrumpimos el flujo principal si falla la creación de la orden
       }
@@ -288,11 +288,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Solo mostrar error si realmente hay un mensaje de error
     if (error && Object.keys(error).length > 0) {
-      // Registrar excepción no controlada
-      logSuspiciousActivity(
-        `Error no controlado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        request
-      );
+    // Registrar excepción no controlada
+    logSuspiciousActivity(
+      `Error no controlado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      request
+    );
     }
     
     // Respuesta genérica para el cliente, sin exponer detalles internos

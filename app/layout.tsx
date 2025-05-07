@@ -23,10 +23,11 @@ export const metadata: Metadata = {
     description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados',
     type: 'website',
   },
-  icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
-  },
+  icons: [
+    { rel: 'icon', url: '/logo.png' },
+    { rel: 'apple-touch-icon', url: '/logo.png' },
+    { rel: 'shortcut icon', url: '/logo.png' }
+  ]
 }
 
 // Componente fallback para uso con Suspense en toda la aplicación
@@ -48,6 +49,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="h-full">
+      <head>
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="shortcut icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4">

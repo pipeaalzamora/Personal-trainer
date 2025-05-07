@@ -3,7 +3,6 @@ import { config } from '@/config/config';
 import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCoursesExcelFiles } from '@/lib/supabase-api';
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
 import { supabase } from '@/lib/supabase';
-import { enqueueMessage } from '@/lib/queue';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -59,212 +58,195 @@ export async function POST(request: Request) {
     const status = data.response_code === 0 ? 'COMPLETED' : 'FAILED';
     console.log(`Estado determinado: ${status}, código de respuesta: ${data.response_code}`);
     
-    // Actualizar la orden en Supabase - OPERACIÓN CRÍTICA
-    let updatedOrder = null;
+    // Verificar si la orden existe
     try {
-      updatedOrder = await updateOrderTransaction(
+      const existingOrder = await getOrderByBuyOrder(data.buy_order);
+      console.log(`Orden encontrada: ${existingOrder ? existingOrder.id : 'No encontrada'}`);
+      
+      if (!existingOrder) {
+        console.warn(`⚠️ No se encontró la orden con buy_order=${data.buy_order}`);
+      } else {
+        console.log(`Estado actual de la orden: ${existingOrder.status}`);
+      }
+    } catch (orderError) {
+      console.error('❌ Error al buscar la orden:', orderError);
+    }
+    
+    // Actualizar la orden en Supabase
+    try {
+      const updatedOrder = await updateOrderTransaction(
         data.buy_order,
         status,
         data,
         token
       );
       console.log(`✅ Orden ${data.buy_order} actualizada en base de datos con estado: ${status}`);
-    } catch (dbError) {
-      console.error('❌ Error al actualizar orden:', dbError);
-      // Continuar para devolver respuesta al cliente
-    }
-    
-    // Si la transacción fue exitosa, encolar el procesamiento de emails y archivos
-    if (updatedOrder && status === 'COMPLETED') {
-      try {
-        // Determinar el email del usuario
-        let email = null;
+      console.log(`ID de la orden actualizada: ${updatedOrder.id}`);
+      
+      // Registrar en el historial de transacciones
+      if (updatedOrder && updatedOrder.id) {
+        // Obtener los items de la orden y los nombres de los cursos
+        const orderItems = await getOrderItems(updatedOrder.id);
+        const courseNames = orderItems.map(item => item.course?.title || 'Curso desconocido');
+
+        await addOrderTransactionHistory(
+          updatedOrder.id,
+          status,
+          { courseNames }
+        );
         
-        // Intentar obtener email de múltiples fuentes
-        const transactionResponse = updatedOrder.transaction_response;
-        if (transactionResponse && 
-            typeof transactionResponse === 'object' && 
-            'sessionData' in transactionResponse && 
-            transactionResponse.sessionData && 
-            typeof transactionResponse.sessionData === 'object' && 
-            'email' in transactionResponse.sessionData) {
-          email = transactionResponse.sessionData.email as string;
-        }
+        console.log(`✅ Historial de transacción registrado para orden ${data.buy_order}: ${status}`);
         
-        if (!email && updatedOrder.user_id) {
-          // Buscar email por user_id
-          const { data: userData } = await supabase
-            .from('users')
-            .select('email')
-            .eq('id', updatedOrder.user_id)
-            .single();
+        // Si la transacción fue completada con éxito, enviar email con los cursos
+        if (status === 'COMPLETED') {
+          try {
+            // Intentar obtener el email directamente de los datos disponibles
+            let email: string | null = null;
             
-          email = userData?.email;
+            // 1. Intentar obtener el email del localStorage (frontend)
+            // El email puede estar en los datos de la transacción si se pasó desde el frontend
+            const transactionData = updatedOrder.transaction_response;
+            if (transactionData && 
+                typeof transactionData === 'object' && 
+                'sessionData' in transactionData && 
+                typeof transactionData.sessionData === 'object' &&
+                transactionData.sessionData &&
+                'email' in transactionData.sessionData) {
+              email = transactionData.sessionData.email as string;
+              console.log(`✅ Email obtenido de los datos de la sesión: ${email}`);
+            }
+            
+            // 2. Si no hay email en la transacción, intentar obtenerlo por user_id
+            if (!email && updatedOrder.user_id) {
+              try {
+                const { data: userData } = await supabase
+                  .from('users')
+                  .select('email')
+                  .eq('id', updatedOrder.user_id)
+                  .single();
+                
+                if (userData && userData.email) {
+                  email = userData.email;
+                  console.log(`✅ Email obtenido directamente de la tabla users: ${email}`);
+                }
+              } catch (userError) {
+                console.error('❌ Error al obtener usuario por ID:', userError);
+              }
+            }
+            
+            // 3. Como último recurso, intentar extraer el email de otros campos
+            if (!email) {
+              // El email podría estar en el session_id (a veces se usa un formato como "user@example.com-timestamp")
+              const sessionParts = updatedOrder.session_id.split('-');
+              const possibleEmail = sessionParts[0];
+              if (possibleEmail && possibleEmail.includes('@')) {
+                email = possibleEmail;
+                console.log(`✅ Email obtenido del session_id: ${email}`);
+              }
+            }
+            
+            // 4. Buscar el email en localStorage del frontend 
+            // Esto se maneja en el frontend, aquí solo intentamos otras fuentes
+            
+            // Si se encontró un email, proceder con el envío
+            if (email) {
+              // Obtener los items y títulos de cursos
+              const orderItems = await getOrderItems(updatedOrder.id);
+              const courseIds = orderItems.map(item => item.course_id);
+              const courseTitles = orderItems.map(item => 
+                item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
+              );
+              // Obtener categorías de los cursos
+              const courseCategories = orderItems.map(item => 
+                item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
+              );
+              
+              // 1. Enviar comprobante de pago
+              const receiptSent = await sendPaymentReceiptEmail(
+                email,
+                {
+                  transactionId: data.buy_order,
+                  cardNumber: data.card_detail?.card_number || '',
+                  amount: data.amount,
+                  date: new Date(data.transaction_date).toLocaleString('es-ES'),
+                  authCode: data.authorization_code
+                }
+              );
+              
+              if (receiptSent) {
+                console.log(`✅ Comprobante de pago enviado a ${email}`);
+              } else {
+                console.error(`❌ Error al enviar comprobante de pago a ${email}`);
+              }
+              
+              // 2. Obtener archivos Excel de los cursos
+              let attachments: Array<{
+                filename: string;
+                content: Buffer;
+                contentType: string;
+              }> = [];
+              
+              try {
+                const excelFiles = await getCoursesExcelFiles(courseIds);
+                attachments = excelFiles
+                  .filter(file => file.data !== null)
+                  .map(file => ({
+                    filename: file.filename || `curso.xlsx`,
+                    content: file.data as Buffer,
+                    contentType: file.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                  }));
+                  
+                console.log(`✅ Se encontraron ${attachments.length} archivos adjuntos para los cursos`);
+              } catch (excelError) {
+                console.error('❌ Error al obtener archivos Excel:', excelError);
+              }
+              
+              // 3. Enviar correo de confirmación de compra (con o sin adjuntos)
+              const confirmationSent = await sendOrderConfirmationEmail(
+                email,
+                {
+                  orderId: updatedOrder.id,
+                  buyOrder: data.buy_order,
+                  courseTitles,
+                  courseCategories,
+                  totalAmount: data.amount,
+                  attachments: attachments.length > 0 ? attachments : undefined
+                }
+              );
+              
+              if (confirmationSent) {
+                console.log(`✅ Email de confirmación enviado a ${email} con ${attachments.length} archivos adjuntos`);
+              } else {
+                console.error(`❌ Error al enviar email de confirmación a ${email}`);
+              }
+            } else {
+              console.error(`❌ No se pudo obtener un email válido para enviar la confirmación de la orden ${updatedOrder.id}`);
+            }
+          } catch (emailError) {
+            console.error('❌ Error al procesar el envío de email:', emailError);
+            // No interrumpimos el flujo principal si falla el envío de email
+          }
         }
-        
-        // Última opción: revisar session_id
-        if (!email && updatedOrder.session_id && updatedOrder.session_id.includes('@')) {
-          const sessionParts = updatedOrder.session_id.split('-');
-          email = sessionParts[0].includes('@') ? sessionParts[0] : null;
-        }
-        
-        if (email) {
-          // Encolar el mensaje para procesamiento asíncrono
-          const messageId = await enqueueMessage('process-transaction', {
-            orderId: updatedOrder.id,
-            buyOrder: data.buy_order,
-            email,
-            transactionData: data
-          });
-          
-          console.log(`✅ Procesamiento de emails y archivos encolado: ${messageId}`);
-          
-          // Registrar en el historial de forma asíncrona sin bloquear
-          addOrderTransactionHistory(
-            updatedOrder.id,
-            'QUEUED_FOR_PROCESSING', 
-            { messageId }
-          ).catch(err => console.error('Error al registrar en historial:', err));
-        } else {
-          console.warn('⚠️ No se pudo determinar el email para enviar notificaciones');
-        }
-      } catch (queueError) {
-        console.error('❌ Error al encolar procesamiento:', queueError);
-        // No bloqueamos la respuesta al cliente si falla el encolamiento
+      } else {
+        console.error('❌ No se pudo registrar historial: updatedOrder no válido');
       }
+    } catch (dbError) {
+      // Solo mostrar error si realmente hay un mensaje de error
+      if (dbError && Object.keys(dbError).length > 0) {
+      console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
+      }
+      // No interrumpimos el flujo principal si falla la actualización en BD
     }
     
-    // Devolver respuesta inmediatamente al cliente
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
+    // Solo mostrar error si realmente hay un mensaje de error
+    if (error && Object.keys(error).length > 0) {
     console.error('❌ Error en API route:', error);
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500, headers: corsHeaders }
     );
-  }
-}
-
-// Función asíncrona para procesar operaciones no críticas después de completar la transacción
-async function processPurchaseCompletionAsync(updatedOrder: any, transactionData: any) {
-  try {
-    // Ejecutar operaciones iniciales en paralelo
-    const orderItems = await getOrderItems(updatedOrder.id);
-    
-    // Lanzar operación de historial en paralelo sin esperar su resultado
-    addOrderTransactionHistory(
-      updatedOrder.id,
-      'COMPLETED',
-      { courseNames: orderItems.map(item => item.course?.title || 'Curso desconocido') }
-    ).catch(err => console.error('Error al agregar historial:', err));
-    
-    // Determinar email
-    let email: string | null = null;
-    
-    // Extraer email de forma más directa
-    const sessionData = updatedOrder.transaction_response?.sessionData;
-    email = sessionData?.email || null;
-    
-    // Intentar obtener por user_id si no se encontró
-    if (!email && updatedOrder.user_id) {
-      try {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('email')
-          .eq('id', updatedOrder.user_id)
-          .single();
-        
-        email = userData?.email || null;
-      } catch (error) {
-        console.error('Error al obtener email por user_id:', error);
-      }
-    }
-    
-    // Revisar session_id como último recurso
-    if (!email && updatedOrder.session_id && updatedOrder.session_id.includes('@')) {
-      const sessionParts = updatedOrder.session_id.split('-');
-      email = sessionParts[0].includes('@') ? sessionParts[0] : null;
-    }
-    
-    if (!email) {
-      console.error(`No se pudo obtener email para la orden ${updatedOrder.id}`);
-      return;
-    }
-    
-    // Iniciar proceso de emails en paralelo
-    await processPurchaseEmails(email, updatedOrder, orderItems, transactionData);
-  } catch (error) {
-    console.error('Error en procesamiento asíncrono:', error);
-  }
-}
-
-// Función para procesar y enviar emails de forma más eficiente
-async function processPurchaseEmails(
-  email: string, 
-  order: any, 
-  orderItems: any[], 
-  transactionData: any
-) {
-  try {
-    // Preparar datos comunes
-    const courseIds = orderItems.map(item => item.course_id);
-    const courseTitles = orderItems.map(item => 
-      item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
-    );
-    const courseCategories = orderItems.map(item => 
-      item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
-    );
-    
-    // 1. Ejecutar operaciones en paralelo usando Promise.all
-    // - Enviar comprobante de pago
-    // - Obtener archivos Excel
-    const [, excelFiles] = await Promise.all([
-      // Enviar el comprobante de pago (no necesitamos esperar su resultado específico)
-      sendPaymentReceiptEmail(
-        email,
-        {
-          transactionId: transactionData.buy_order,
-          cardNumber: transactionData.card_detail?.card_number || '',
-          amount: transactionData.amount,
-          date: new Date(transactionData.transaction_date).toLocaleString('es-ES'),
-          authCode: transactionData.authorization_code
-        }
-      ).catch(err => {
-        console.error('Error al enviar comprobante:', err);
-        return false;
-      }),
-      
-      // Obtener archivos Excel en paralelo
-      getCoursesExcelFiles(courseIds).catch(err => {
-        console.error('Error al obtener archivos Excel:', err);
-        return [];
-      })
-    ]);
-    
-    // Procesar resultado de archivos Excel
-    const attachments = (excelFiles || [])
-      .filter(file => file && file.data !== null)
-      .map(file => ({
-        filename: file.filename || `curso.xlsx`,
-        content: file.data as Buffer,
-        contentType: file.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      }));
-    
-    // 2. Enviar correo de confirmación de compra
-    await sendOrderConfirmationEmail(
-      email,
-      {
-        orderId: order.id,
-        buyOrder: transactionData.buy_order,
-        courseTitles,
-        courseCategories,
-        totalAmount: transactionData.amount,
-        attachments: attachments.length > 0 ? attachments : undefined
-      }
-    ).catch(err => console.error('Error al enviar confirmación:', err));
-    
-    console.log(`✅ Emails procesados para ${email} con ${attachments.length} archivos adjuntos`);
-  } catch (error) {
-    console.error('Error al procesar emails:', error);
   }
 } 

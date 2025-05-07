@@ -27,8 +27,11 @@ export default function Footer() {
             </div>
           </div>
         </div>
-        <div className="mt-8 pt-8 text-center">
+        <div className="mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm">&copy; {new Date().getFullYear()} CoachInostroza. Todos los derechos reservados.</p>
+          <p className="text-sm">
+            Sitio creado por <a href="https://www.instagram.com/pipealzamora/" target="_blank" rel="noopener noreferrer" className="hover:underline text-red-300 font-medium">pipeaalzamora</a>
+          </p>
         </div>
       </div>
     </footer>

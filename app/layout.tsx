@@ -14,14 +14,18 @@ import { Suspense } from 'react';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Personal Trainer - Programas de entrenamiento personalizados',
+  title: 'Coach Inostroza - Programas de entrenamiento personalizados',
   description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados. Ganancia muscular, pérdida de grasa, powerlifting y más.',
   keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, powerlifting, fuerza, fitness',
-  authors: [{ name: 'Personal Trainer' }],
+  authors: [{ name: 'Coach Inostroza' }],
   openGraph: {
     title: 'Coach Inostroza - Programas de entrenamiento personalizados',
     description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados',
     type: 'website',
+  },
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
 }
 

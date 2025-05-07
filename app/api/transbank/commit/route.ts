@@ -98,34 +98,24 @@ export async function POST(request: Request) {
 // Función asíncrona para procesar operaciones no críticas después de completar la transacción
 async function processPurchaseCompletionAsync(updatedOrder: any, transactionData: any) {
   try {
-    // Registrar en el historial de transacciones
+    // Ejecutar operaciones iniciales en paralelo
     const orderItems = await getOrderItems(updatedOrder.id);
-    const courseNames = orderItems.map(item => item.course?.title || 'Curso desconocido');
-
-    // 1. Agregar entrada en historial
-    await addOrderTransactionHistory(
+    
+    // Lanzar operación de historial en paralelo sin esperar su resultado
+    addOrderTransactionHistory(
       updatedOrder.id,
       'COMPLETED',
-      { courseNames }
+      { courseNames: orderItems.map(item => item.course?.title || 'Curso desconocido') }
     ).catch(err => console.error('Error al agregar historial:', err));
     
-    console.log(`✅ Historial de transacción registrado para orden ${updatedOrder.id}`);
-    
-    // 2. Obtener email del usuario
+    // Determinar email
     let email: string | null = null;
     
-    // Intentar obtener el email de diferentes fuentes
-    const transactionResponseData = updatedOrder.transaction_response;
-    if (transactionResponseData && 
-        typeof transactionResponseData === 'object' && 
-        'sessionData' in transactionResponseData && 
-        typeof transactionResponseData.sessionData === 'object' &&
-        transactionResponseData.sessionData &&
-        'email' in transactionResponseData.sessionData) {
-      email = transactionResponseData.sessionData.email as string;
-    }
+    // Extraer email de forma más directa
+    const sessionData = updatedOrder.transaction_response?.sessionData;
+    email = sessionData?.email || null;
     
-    // Si no hay email en la transacción, intentar obtenerlo por user_id
+    // Intentar obtener por user_id si no se encontró
     if (!email && updatedOrder.user_id) {
       try {
         const { data: userData } = await supabase
@@ -134,35 +124,31 @@ async function processPurchaseCompletionAsync(updatedOrder: any, transactionData
           .eq('id', updatedOrder.user_id)
           .single();
         
-        if (userData && userData.email) {
-          email = userData.email;
-        }
-      } catch (userError) {
-        console.error('Error al obtener usuario por ID:', userError);
+        email = userData?.email || null;
+      } catch (error) {
+        console.error('Error al obtener email por user_id:', error);
       }
     }
     
-    // Última opción: revisar el session_id
-    if (!email) {
+    // Revisar session_id como último recurso
+    if (!email && updatedOrder.session_id && updatedOrder.session_id.includes('@')) {
       const sessionParts = updatedOrder.session_id.split('-');
-      const possibleEmail = sessionParts[0];
-      if (possibleEmail && possibleEmail.includes('@')) {
-        email = possibleEmail;
-      }
+      email = sessionParts[0].includes('@') ? sessionParts[0] : null;
     }
     
-    if (email) {
-      // 3. Procesar y enviar emails
-      await processPurchaseEmails(email, updatedOrder, orderItems, transactionData);
-    } else {
+    if (!email) {
       console.error(`No se pudo obtener email para la orden ${updatedOrder.id}`);
+      return;
     }
+    
+    // Iniciar proceso de emails en paralelo
+    await processPurchaseEmails(email, updatedOrder, orderItems, transactionData);
   } catch (error) {
     console.error('Error en procesamiento asíncrono:', error);
   }
 }
 
-// Función para procesar y enviar emails
+// Función para procesar y enviar emails de forma más eficiente
 async function processPurchaseEmails(
   email: string, 
   order: any, 
@@ -170,7 +156,7 @@ async function processPurchaseEmails(
   transactionData: any
 ) {
   try {
-    // Preparar datos para emails
+    // Preparar datos comunes
     const courseIds = orderItems.map(item => item.course_id);
     const courseTitles = orderItems.map(item => 
       item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
@@ -179,41 +165,42 @@ async function processPurchaseEmails(
       item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
     );
     
-    // 1. Enviar comprobante de pago (operación más ligera primero)
-    await sendPaymentReceiptEmail(
-      email,
-      {
-        transactionId: transactionData.buy_order,
-        cardNumber: transactionData.card_detail?.card_number || '',
-        amount: transactionData.amount,
-        date: new Date(transactionData.transaction_date).toLocaleString('es-ES'),
-        authCode: transactionData.authorization_code
-      }
-    ).catch(err => console.error('Error al enviar comprobante:', err));
+    // 1. Ejecutar operaciones en paralelo usando Promise.all
+    // - Enviar comprobante de pago
+    // - Obtener archivos Excel
+    const [, excelFiles] = await Promise.all([
+      // Enviar el comprobante de pago (no necesitamos esperar su resultado específico)
+      sendPaymentReceiptEmail(
+        email,
+        {
+          transactionId: transactionData.buy_order,
+          cardNumber: transactionData.card_detail?.card_number || '',
+          amount: transactionData.amount,
+          date: new Date(transactionData.transaction_date).toLocaleString('es-ES'),
+          authCode: transactionData.authorization_code
+        }
+      ).catch(err => {
+        console.error('Error al enviar comprobante:', err);
+        return false;
+      }),
+      
+      // Obtener archivos Excel en paralelo
+      getCoursesExcelFiles(courseIds).catch(err => {
+        console.error('Error al obtener archivos Excel:', err);
+        return [];
+      })
+    ]);
     
-    // 2. Obtener archivos Excel de los cursos (operación más pesada)
-    let attachments: Array<{
-      filename: string;
-      content: Buffer;
-      contentType: string;
-    }> = [];
+    // Procesar resultado de archivos Excel
+    const attachments = (excelFiles || [])
+      .filter(file => file && file.data !== null)
+      .map(file => ({
+        filename: file.filename || `curso.xlsx`,
+        content: file.data as Buffer,
+        contentType: file.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      }));
     
-    try {
-      // Intentar obtener los archivos Excel
-      const excelFiles = await getCoursesExcelFiles(courseIds);
-      attachments = excelFiles
-        .filter(file => file.data !== null)
-        .map(file => ({
-          filename: file.filename || `curso.xlsx`,
-          content: file.data as Buffer,
-          contentType: file.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }));
-    } catch (excelError) {
-      console.error('Error al obtener archivos Excel:', excelError);
-      // Continuar sin attachments
-    }
-    
-    // 3. Enviar correo de confirmación de compra con los attachments
+    // 2. Enviar correo de confirmación de compra
     await sendOrderConfirmationEmail(
       email,
       {
@@ -226,7 +213,7 @@ async function processPurchaseEmails(
       }
     ).catch(err => console.error('Error al enviar confirmación:', err));
     
-    console.log(`✅ Emails de confirmación enviados a ${email}`);
+    console.log(`✅ Emails procesados para ${email} con ${attachments.length} archivos adjuntos`);
   } catch (error) {
     console.error('Error al procesar emails:', error);
   }

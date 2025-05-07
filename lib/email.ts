@@ -92,7 +92,7 @@ export const sendOrderConfirmationEmail = async (
         <p>Si tienes alguna duda sobre cómo utilizar los materiales, no dudes en contactarnos.</p>
         
         <p style="margin-top: 30px;">¡Éxito en tu entrenamiento!</p>
-        <p style="margin: 0;">Saludos,<br><strong>El equipo de Coach Inostroza</strong></p>
+        <p style="margin: 0;">Saludos,<br><strong>Coach Inostroza</strong></p>
       </div>
       
       <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
@@ -145,7 +145,7 @@ export const sendPaymentReceiptEmail = async (
         <p>Este es un comprobante de tu pago realizado a través de nuestra plataforma de pagos segura.</p>
         <p>Recibirás un segundo correo con los detalles de tu compra y cómo acceder a tus cursos.</p>
         
-        <p style="margin-top: 30px;">Saludos,<br><strong>El equipo de Coach Inostroza</strong></p>
+        <p style="margin-top: 30px;">Saludos,<br><strong> Coach Inostroza</strong></p>
       </div>
       
       <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
@@ -183,7 +183,7 @@ export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
     
     // Enviar el email con Resend usando el dominio personalizado
     const { data: emailData, error } = await resend.emails.send({
-      from: 'Equipo Coach Inostroza <no-reply@coachinostroza.cl>',
+      from: 'Coach Inostroza <no-reply@coachinostroza.cl>',
       to: data.to,
       subject: data.subject,
       html: data.html,

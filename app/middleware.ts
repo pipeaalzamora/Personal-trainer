@@ -1,26 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Configuración de dominios permitidos
-const allowedOrigins = ['http://localhost:3000', 'https://www.coachinostroza.cl'];
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'https://www.coachinostroza.cl',
+  'https://coachinostroza.cl',
+  'https://personal-trainer-jet.vercel.app'
+];
 
-// Cabeceras de seguridad básicas para todas las respuestas
+// Cabeceras de seguridad mejoradas para todas las respuestas
 const securityHeaders = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
-  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;",
+  'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' https://webpay3gint.transbank.cl https://webpay3g.transbank.cl; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' https://webpay3gint.transbank.cl https://webpay3g.transbank.cl https://*.vercel-postgres.com https://*.supabase.co;",
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(self)',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload'
 };
 
-// Implementación de rate limiting básico
+// Implementación de rate limiting con límites por tipo de ruta
 const requestCounts = new Map<string, { count: number, lastReset: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minuto
-const MAX_REQUESTS = 100; // Máximo de solicitudes por minuto
 
-function checkRateLimit(ip: string): boolean {
+// Límites diferentes para distintos tipos de rutas
+const rateLimits = {
+  api: 100,                   // 100 llamadas API por minuto
+  transbank: 20,              // 20 transacciones por minuto
+  general: 200                // 200 solicitudes generales por minuto
+};
+
+function checkRateLimit(ip: string, pathname: string): boolean {
   const now = Date.now();
-  const record = requestCounts.get(ip) || { count: 0, lastReset: now };
+  const key = `${ip}:${getRateLimitCategory(pathname)}`;
+  const record = requestCounts.get(key) || { count: 0, lastReset: now };
   
   // Reiniciar contador si ha pasado el tiempo de ventana
   if (now - record.lastReset > RATE_LIMIT_WINDOW) {
@@ -30,29 +43,59 @@ function checkRateLimit(ip: string): boolean {
   
   // Incrementar contador y verificar límite
   record.count++;
-  requestCounts.set(ip, record);
+  requestCounts.set(key, record);
   
-  return record.count <= MAX_REQUESTS;
+  // Determinar el límite basado en la categoría de la ruta
+  const limit = getRateLimitForPath(pathname);
+  
+  return record.count <= limit;
 }
+
+// Determinar categoría de la ruta para rate limiting
+function getRateLimitCategory(pathname: string): string {
+  if (pathname.startsWith('/api/transbank')) {
+    return 'transbank';
+  } else if (pathname.startsWith('/api')) {
+    return 'api';
+  }
+  return 'general';
+}
+
+// Obtener límite adecuado para la ruta
+function getRateLimitForPath(pathname: string): number {
+  const category = getRateLimitCategory(pathname);
+  return rateLimits[category as keyof typeof rateLimits];
+}
+
+// Limpiar el mapa de rate-limiting periódicamente para evitar memory leaks
+setInterval(() => {
+  const now = Date.now();
+  Array.from(requestCounts.entries()).forEach(([key, record]) => {
+    if (now - record.lastReset > RATE_LIMIT_WINDOW * 2) {
+      requestCounts.delete(key);
+    }
+  });
+}, RATE_LIMIT_WINDOW * 5); // Cada 5 minutos
 
 export function middleware(request: NextRequest) {
   // Obtener IP para rate limiting
   const ip = request.ip || 'unknown';
-  
-  // Si la URL contiene parameters del tipo token_ws, es una redirección de Transbank
-  // y no debemos interferir con las cabeceras
   const url = request.nextUrl.clone();
-  if (url.searchParams.has('token_ws')) {
+  const pathname = url.pathname;
+  
+  // Lista de rutas que no deben ser interceptadas por el middleware
+  const bypassRoutes = ['/payment/confirmation', '/api/transbank/commit', '/api/transbank/create'];
+  if (bypassRoutes.some(route => pathname.includes(route)) && url.searchParams.has('token_ws')) {
     return NextResponse.next();
   }
 
-  // Aplicar rate limiting (excepto para rutas críticas)
-  if (!url.pathname.includes('/payment/confirmation')) {
-    const withinLimit = checkRateLimit(ip);
+  // Aplicar rate limiting excepto para rutas críticas
+  if (!bypassRoutes.some(route => pathname.includes(route))) {
+    const withinLimit = checkRateLimit(ip, pathname);
     if (!withinLimit) {
       return NextResponse.json(
-        { error: 'Too many requests, please try again later' },
-        { status: 429 }
+        { error: 'Demasiadas solicitudes, por favor intenta más tarde' },
+        { status: 429, headers: { 'Retry-After': '60' } }
       );
     }
   }
@@ -65,13 +108,16 @@ export function middleware(request: NextRequest) {
     // Configuración dinámica de CORS basada en el origen
     const corsHeaders: Record<string, string> = {
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, X-CSRF-Token',
       'Access-Control-Max-Age': '86400', // 24 horas en segundos
     };
     
     // Solo permitir orígenes aprobados
     if (origin && allowedOrigins.includes(origin)) {
       corsHeaders['Access-Control-Allow-Origin'] = origin;
+    } else if (process.env.NODE_ENV !== 'production') {
+      // En desarrollo, permitir cualquier origen
+      corsHeaders['Access-Control-Allow-Origin'] = origin || '*';
     }
     
     return NextResponse.json({}, { headers: {...corsHeaders, ...securityHeaders} });
@@ -85,22 +131,24 @@ export function middleware(request: NextRequest) {
   
   // Agregar cabecera de CORS si el origen está permitido
   if (origin && allowedOrigins.includes(origin)) {
-    response.headers.append('Access-Control-Allow-Origin', origin);
+    response.headers.set('Access-Control-Allow-Origin', origin);
+  } else if (process.env.NODE_ENV !== 'production') {
+    // En desarrollo, permitir cualquier origen
+    response.headers.set('Access-Control-Allow-Origin', origin || '*');
   }
   
   // Agregar cabeceras de seguridad a todas las respuestas
   Object.entries(securityHeaders).forEach(([key, value]) => {
-    response.headers.append(key, value);
+    response.headers.set(key, value);
   });
 
   return response;
 }
 
-// Configurar el middleware para que solo se aplique a las rutas de API
-// y excluir explícitamente las rutas de confirmación de pago
+// Configurar el middleware para que se aplique a todas las rutas
+// excepto específicamente algunas rutas críticas de pago
 export const config = {
   matcher: [
-    '/api/:path*',
-    '/((?!payment/confirmation).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

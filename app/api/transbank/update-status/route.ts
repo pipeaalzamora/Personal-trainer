@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory } from '@/lib/supabase-api';
+import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems } from '@/lib/supabase-api';
 
 // Cabeceras CORS
 const corsHeaders = {
@@ -52,18 +52,20 @@ export async function POST(request: Request) {
     
     // Registrar en el historial de transacciones
     try {
+      const orderItems = await getOrderItems(updatedOrder.id);
+      const courseNames = orderItems.map(item => item.course?.title || 'Curso desconocido');
+
       const historyEntry = await addOrderTransactionHistory(
         updatedOrder.id,
         status,
-        {
-          token,
-          timestamp: new Date().toISOString(),
-          ...additionalData
-        }
+        { courseNames }
       );
       console.log(`Historial de transacción registrado para orden ${buyOrder}: ${status}`);
     } catch (historyError) {
-      console.error('Error al registrar historial de transacción:', historyError);
+      // Solo mostrar error si realmente hay un mensaje de error
+      if (historyError && Object.keys(historyError).length > 0) {
+        console.error('Error al registrar historial de transacción:', historyError);
+      }
       // No interrumpimos el flujo principal si falla el registro del historial
     }
     

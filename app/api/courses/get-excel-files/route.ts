@@ -35,7 +35,16 @@ export async function POST(request: Request) {
     
     // Filtrar los archivos válidos
     const validFiles = excelFiles.filter(file => file.data !== null);
-    console.log(`Se encontraron ${validFiles.length} archivos Excel válidos`);
+    console.log(`Se encontraron ${validFiles.length} archivos Excel válidos de ${courseIds.length} solicitados`);
+    
+    // Registrar información sobre los archivos no encontrados
+    if (validFiles.length < courseIds.length) {
+      const missingFiles = excelFiles
+        .filter(file => file.data === null)
+        .map(file => file.courseId);
+      
+      console.warn(`No se encontraron archivos para los siguientes cursos: ${missingFiles.join(', ')}`);
+    }
     
     // Crear array de archivos adjuntos para el email
     const attachments = validFiles.map(file => ({
@@ -49,6 +58,8 @@ export async function POST(request: Request) {
       { 
         success: true, 
         attachments,
+        totalRequested: courseIds.length,
+        totalFound: validFiles.length,
         message: `Se encontraron ${attachments.length} archivos adjuntos de ${courseIds.length} cursos solicitados`
       },
       { headers: corsHeaders }

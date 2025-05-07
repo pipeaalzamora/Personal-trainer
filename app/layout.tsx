@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, powerlifting, fuerza, fitness',
   authors: [{ name: 'Personal Trainer' }],
   openGraph: {
-    title: 'Personal Trainer - Programas de entrenamiento personalizados',
+    title: 'Coach Inostroza - Programas de entrenamiento personalizados',
     description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados',
     type: 'website',
   },

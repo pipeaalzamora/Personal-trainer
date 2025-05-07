@@ -85,17 +85,14 @@ export async function POST(request: Request) {
       
       // Registrar en el historial de transacciones
       if (updatedOrder && updatedOrder.id) {
+        // Obtener los items de la orden y los nombres de los cursos
+        const orderItems = await getOrderItems(updatedOrder.id);
+        const courseNames = orderItems.map(item => item.course?.title || 'Curso desconocido');
+
         await addOrderTransactionHistory(
           updatedOrder.id,
           status,
-          {
-            token,
-            amount: data.amount,
-            timestamp: new Date().toISOString(),
-            response_code: data.response_code,
-            transaction_date: data.transaction_date,
-            card_number: data.card_detail?.card_number || ''
-          }
+          { courseNames }
         );
         
         console.log(`✅ Historial de transacción registrado para orden ${data.buy_order}: ${status}`);
@@ -229,13 +226,19 @@ export async function POST(request: Request) {
         console.error('❌ No se pudo registrar historial: updatedOrder no válido');
       }
     } catch (dbError) {
-      console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
+      // Solo mostrar error si realmente hay un mensaje de error
+      if (dbError && Object.keys(dbError).length > 0) {
+        console.error('❌ Error al actualizar la orden en la base de datos:', dbError);
+      }
       // No interrumpimos el flujo principal si falla la actualización en BD
     }
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
-    console.error('❌ Error en API route:', error);
+    // Solo mostrar error si realmente hay un mensaje de error
+    if (error && Object.keys(error).length > 0) {
+      console.error('❌ Error en API route:', error);
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500, headers: corsHeaders }

@@ -63,8 +63,8 @@ export default function RootLayout({
               <Image 
                 src={logo} 
                 alt="CoachInostroza Logo" 
-                width={150} 
-                height={150} 
+                width={300} 
+                height={300} 
                 className="rounded-full"
               />
             </Link>

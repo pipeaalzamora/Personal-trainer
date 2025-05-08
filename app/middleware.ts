@@ -5,7 +5,6 @@ const allowedOrigins = [
   'http://localhost:3000', 
   'https://www.coachinostroza.cl',
   'https://coachinostroza.cl',
-  'https://personal-trainer-jet.vercel.app'
 ];
 
 // Cabeceras de seguridad mejoradas para todas las respuestas

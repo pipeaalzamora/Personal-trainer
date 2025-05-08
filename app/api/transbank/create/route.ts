@@ -162,6 +162,8 @@ export async function POST(request: NextRequest) {
         request
       );
       
+      console.error('❌ Error en Transbank:', response.status, responseText);
+      
       // No devolver detalles completos al cliente por seguridad
       return NextResponse.json(
         { error: 'Error en el procesamiento del pago', code: response.status },
@@ -171,6 +173,11 @@ export async function POST(request: NextRequest) {
     
     // Extraer token y URL de redirección de la respuesta
     const { token, url } = responseData;
+    
+    // Log del token para depuración
+    console.log('🔑 TOKEN DE TRANSBANK:', token);
+    console.log('🔗 URL DE REDIRECCIÓN:', url);
+    console.log('📋 DATOS COMPLETOS:', JSON.stringify(responseData, null, 2));
     
     // Guardar la orden en la base de datos si tenemos usuario
     let orderId = null;
@@ -280,6 +287,12 @@ export async function POST(request: NextRequest) {
     }
     
     // Devolver token y URL al cliente (sin exponer detalles internos)
+    console.log('✅ RESPUESTA FINAL para cliente:', JSON.stringify({ 
+      token, 
+      url,
+      transactionId: sanitizedBuyOrder
+    }, null, 2));
+    
     return NextResponse.json({ 
       token, 
       url,

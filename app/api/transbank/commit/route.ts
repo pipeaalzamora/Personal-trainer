@@ -48,6 +48,62 @@ async function getExcelFilesForCourse(courseId: string) {
   }
 }
 
+// Verificar si los correos ya fueron enviados para esta orden
+async function checkEmailsStatus(orderId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('emails_sent')
+      .eq('id', orderId)
+      .single();
+    
+    if (error) {
+      console.error('Error al verificar estado de correos:', error);
+      return false;
+    }
+    
+    return data?.emails_sent === true;
+  } catch (error) {
+    console.error('Error al verificar estado de correos:', error);
+    return false;
+  }
+}
+
+// Marcar correos como enviados para esta orden
+async function markEmailsAsSent(orderId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ 
+        emails_sent: true,
+        emails_sent_at: new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('Error al marcar correos como enviados:', error);
+      return false;
+    }
+    
+    // También registrar en el historial de transacciones
+    await addOrderTransactionHistory(
+      orderId,
+      'EMAIL_SENT',
+      { 
+        emailsSent: true,
+        timestamp: new Date().toISOString()
+      }
+    );
+    
+    return true;
+  } catch (error) {
+    console.error('Error al marcar correos como enviados:', error);
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { token } = await request.json();
@@ -95,6 +151,9 @@ export async function POST(request: Request) {
       );
     }
     
+    // IMPORTANTE: Verificar si los correos ya fueron enviados ANTES de actualizar la orden
+    const emailsAlreadySent = await checkEmailsStatus(existingOrder.id);
+    
     // Actualizar la orden en la base de datos
     const updatedOrder = await updateOrderTransaction(
       data.buy_order,
@@ -115,9 +174,11 @@ export async function POST(request: Request) {
         { courseNames }
       );
       
-      // Si la transacción fue completada con éxito, enviar email con los cursos
-      if (status === 'COMPLETED') {
+      // Si la transacción fue completada con éxito y los correos NO han sido enviados aún
+      if (status === 'COMPLETED' && !emailsAlreadySent) {
         try {
+          console.log(`Preparando envío de correos para orden ${updatedOrder.id} (buyOrder: ${data.buy_order})`);
+          
           // Intentar obtener el email directamente de los datos disponibles
           let email: string | null = null;
           
@@ -146,7 +207,7 @@ export async function POST(request: Request) {
                 email = userData.email;
               }
             } catch (userError) {
-              // Eliminar console.error
+              console.error('Error al obtener email de usuario:', userError);
             }
           }
           
@@ -162,6 +223,16 @@ export async function POST(request: Request) {
           
           // Si se encontró un email, proceder con el envío
           if (email) {
+            console.log(`Email encontrado: ${email}`);
+            
+            // IMPORTANTE: Marcar PRIMERO como enviados para evitar condiciones de carrera
+            const marked = await markEmailsAsSent(updatedOrder.id);
+            
+            if (!marked) {
+              console.error('No se pudo marcar los correos como enviados, cancelando envío');
+              return NextResponse.json(data, { headers: corsHeaders });
+            }
+            
             // Obtener los items y títulos de cursos
             const orderItems = await getOrderItems(updatedOrder.id);
             const courseIds = orderItems.map(item => item.course_id);
@@ -185,6 +256,8 @@ export async function POST(request: Request) {
             );
             
             if (receiptSent) {
+              console.log('Comprobante de pago enviado correctamente');
+              
               // 2. Obtener archivos Excel de los cursos
               let attachments: Array<{
                 filename: string;
@@ -217,7 +290,9 @@ export async function POST(request: Request) {
                 }
               );
               
-              if (!confirmationSent) {
+              if (confirmationSent) {
+                console.log('Correo de confirmación enviado correctamente');
+              } else {
                 console.error('Error al enviar correo de confirmación de compra');
               }
             } else {
@@ -229,15 +304,14 @@ export async function POST(request: Request) {
         } catch (emailError) {
           console.error('Error en el proceso de envío de correos:', emailError);
         }
+      } else if (emailsAlreadySent) {
+        console.log(`Omitiendo envío de correos para orden ${updatedOrder.id} - ya fueron enviados anteriormente`);
       }
-    } else {
-      // Eliminar console.error
     }
     
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
-    // Solo mostrar error si realmente hay un mensaje de error
-    // Eliminar console.error
+    console.error('Error en la ruta commit:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
       { status: 500, headers: corsHeaders }

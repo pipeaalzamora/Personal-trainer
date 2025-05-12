@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
-import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCoursesExcelFiles } from '@/lib/supabase-api';
+import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCourseExcelFile } from '@/lib/supabase-api';
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
 import { supabase } from '@/lib/supabase';
 
@@ -17,6 +17,35 @@ export async function OPTIONS() {
     status: 204,
     headers: corsHeaders
   });
+}
+
+async function getExcelFilesForCourse(courseId: string) {
+  try {
+    const result = await getCourseExcelFile(courseId);
+    
+    if (result.isPackComplete && result.packFiles) {
+      // Si es un pack completo, devolver todos los archivos
+      return result.packFiles.filter(file => 
+        file.data !== null && file.filename !== null && file.contentType !== null
+      ).map(file => ({
+        filename: file.filename!,
+        content: file.data!,
+        contentType: file.contentType!
+      }));
+    } else if (result.data && result.filename && result.contentType) {
+      // Si es un curso individual, devolver ese archivo
+      return [{
+        filename: result.filename,
+        content: result.data,
+        contentType: result.contentType
+      }];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error(`Error al obtener archivos Excel para curso ${courseId}:`, error);
+    return [];
+  }
 }
 
 export async function POST(request: Request) {
@@ -139,7 +168,6 @@ export async function POST(request: Request) {
             const courseTitles = orderItems.map(item => 
               item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
             );
-            // Obtener categorías de los cursos
             const courseCategories = orderItems.map(item => 
               item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
             );
@@ -165,16 +193,15 @@ export async function POST(request: Request) {
               }> = [];
               
               try {
-                const excelFiles = await getCoursesExcelFiles(courseIds);
-                attachments = excelFiles
-                  .filter(file => file.data !== null)
-                  .map(file => ({
-                    filename: file.filename || `curso.xlsx`,
-                    content: file.data as Buffer,
-                    contentType: file.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                  }));
+                // Obtener archivos para cada curso
+                for (const courseId of courseIds) {
+                  const courseFiles = await getExcelFilesForCourse(courseId);
+                  attachments = [...attachments, ...courseFiles];
+                }
+
+                console.log(`Se obtuvieron ${attachments.length} archivos Excel para adjuntar al correo`);
               } catch (excelError) {
-                // Eliminar console.error
+                console.error('Error al obtener archivos Excel:', excelError);
               }
               
               // 3. Enviar correo de confirmación de compra (con o sin adjuntos)
@@ -190,20 +217,17 @@ export async function POST(request: Request) {
                 }
               );
               
-              if (confirmationSent) {
-                // No se necesita imprimir el éxito del envío de correo
-              } else {
-                // Eliminar console.error
+              if (!confirmationSent) {
+                console.error('Error al enviar correo de confirmación de compra');
               }
             } else {
-              // Eliminar console.error
+              console.error('Error al enviar comprobante de pago');
             }
           } else {
-            // Eliminar console.error
+            console.error('No se pudo encontrar el email del usuario');
           }
         } catch (emailError) {
-          // Eliminar console.error
-          // No interrumpimos el flujo principal si falla el envío de email
+          console.error('Error en el proceso de envío de correos:', emailError);
         }
       }
     } else {

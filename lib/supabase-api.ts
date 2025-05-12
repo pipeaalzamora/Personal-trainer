@@ -276,11 +276,157 @@ export async function createOrderItems(
   orderId: string,
   items: { course_id: string, price: number }[]
 ): Promise<OrderItem[]> {
-  const orderItems: OrderItemInsert[] = items.map(item => ({
+  // Definir un tipo extendido para los items procesados
+  interface ProcessedOrderItem {
+    course_id: string;
+    price: number;
+    is_part_of_pack?: boolean;
+  }
+  
+  console.log('🔍 createOrderItems - INICIO - Recibidos:', JSON.stringify(items, null, 2));
+  
+  let processedItems: ProcessedOrderItem[] = [...items]; // Crear una copia de los items originales
+  
+  // Procesar packs completos
+  for (const item of items) {
+    try {
+      console.log(`🔍 Procesando item con course_id: ${item.course_id}`);
+      
+      // Obtener información del curso para verificar si es un pack
+      const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select('title, description, category')
+        .eq('id', item.course_id)
+        .single();
+      
+      if (courseError) {
+        console.error('❌ Error al obtener información del curso:', courseError);
+        continue;
+      }
+      
+      console.log(`📋 Información del curso: ${JSON.stringify(course, null, 2)}`);
+      
+      // Verificar si es un pack completo basándose en el título o categoría
+      const isPack = course?.title?.toLowerCase().includes('pack completo') || 
+                    course?.category?.toLowerCase().includes('pack-completo');
+      
+      console.log(`🧐 ¿Es un pack completo? ${isPack ? 'SÍ' : 'NO'}`);
+      
+      if (isPack) {
+        console.log('📦 Detectado pack completo:', course.title);
+        
+        // Determinar a qué categoría pertenece este pack
+        const packCategory = course.category?.toLowerCase() || '';
+        const titleLower = course.title?.toLowerCase() || '';
+        
+        console.log(`📋 Categoría del pack: "${packCategory}", Título: "${titleLower}"`);
+        
+        let categoryToSearch = '';
+        
+        // Obtener la categoría base del pack (por ejemplo, de "pack-completo-ganancia-muscular" extraer "ganancia-muscular")
+        if (packCategory.includes('pack-completo-')) {
+          categoryToSearch = packCategory.replace('pack-completo-', '');
+          console.log(`🔍 Categoría extraída del nombre de categoría: "${categoryToSearch}"`);
+        } else if (titleLower.includes('pack completo')) {
+          // Intentar extraer la categoría del título
+          const parts = titleLower.split('pack completo');
+          if (parts.length > 1) {
+            categoryToSearch = parts[1].trim();
+            console.log(`🔍 Categoría extraída del título: "${categoryToSearch}"`);
+          }
+        }
+        
+        if (categoryToSearch) {
+          console.log('🔍 Buscando cursos en la categoría:', categoryToSearch);
+          
+          // Buscar todos los cursos individuales de esa categoría
+          const { data: individualCourses, error: coursesError } = await supabase
+            .from('courses')
+            .select('id, title, price, category')
+            .ilike('category', `%${categoryToSearch}%`)
+            .not('id', 'eq', item.course_id); // Excluir el pack mismo
+          
+          if (coursesError) {
+            console.error('❌ Error al buscar cursos individuales:', coursesError);
+            continue;
+          }
+          
+          console.log(`📋 Cursos individuales encontrados (${individualCourses?.length || 0}):`, 
+            JSON.stringify(individualCourses, null, 2));
+          
+          if (individualCourses && individualCourses.length > 0) {
+            console.log('✅ Cursos individuales encontrados:', 
+              individualCourses.map(c => `${c.title} (${c.category})`).join(', '));
+            
+            // Agregar cada curso individual como un item adicional (precio 0 para no cobrar doble)
+            const additionalItems = individualCourses.map(course => ({
+              course_id: course.id,
+              price: 0, // Precio 0 porque ya se pagó en el pack
+              is_part_of_pack: true
+            }));
+            
+            console.log(`📋 Items adicionales a agregar (${additionalItems.length}):`, 
+              JSON.stringify(additionalItems, null, 2));
+            
+            processedItems = [...processedItems, ...additionalItems];
+            
+            console.log(`📋 Lista actualizada de processedItems (${processedItems.length}):`, 
+              JSON.stringify(processedItems, null, 2));
+          } else {
+            console.warn('⚠️ No se encontraron cursos individuales para el pack');
+            
+            // Intenta una búsqueda alternativa si no se encontraron cursos por categoría
+            console.log('🔍 Intentando búsqueda alternativa por categoría principal...');
+            
+            // Extraer la categoría principal (ej: de "ganancia-muscular-mujeres" sacar "ganancia-muscular")
+            const mainCategory = categoryToSearch.split('-').slice(0, 2).join('-');
+            
+            if (mainCategory && mainCategory !== categoryToSearch) {
+              console.log(`🔍 Buscando con categoría principal: "${mainCategory}"`);
+              
+              const { data: altCourses, error: altError } = await supabase
+                .from('courses')
+                .select('id, title, price, category')
+                .ilike('category', `%${mainCategory}%`)
+                .not('id', 'eq', item.course_id);
+                
+              if (!altError && altCourses && altCourses.length > 0) {
+                console.log('✅ Cursos alternativos encontrados:', 
+                  altCourses.map(c => `${c.title} (${c.category})`).join(', '));
+                
+                const altItems = altCourses.map(course => ({
+                  course_id: course.id,
+                  price: 0,
+                  is_part_of_pack: true
+                }));
+                
+                processedItems = [...processedItems, ...altItems];
+                
+                console.log(`📋 Lista actualizada con búsqueda alternativa (${processedItems.length}):`, 
+                  JSON.stringify(processedItems, null, 2));
+              } else {
+                console.warn('⚠️ No se encontraron cursos ni con la búsqueda alternativa');
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error al procesar item de pack:', error);
+    }
+  }
+  
+  console.log('📋 Items finales a insertar:', JSON.stringify(processedItems, null, 2));
+  
+  // Crear los items de orden
+  const orderItems = processedItems.map(item => ({
     order_id: orderId,
     course_id: item.course_id,
-    price: item.price
+    price: item.price,
+    is_part_of_pack: item.is_part_of_pack || false
   }));
+  
+  console.log(`📝 Insertando ${orderItems.length} items en la tabla order_items:`);
   
   const { data, error } = await supabase
     .from('order_items')
@@ -288,8 +434,12 @@ export async function createOrderItems(
     .select();
   
   if (error) {
+    console.error('❌ Error al crear items de orden:', error);
     throw error;
   }
+  
+  console.log(`✅ ${data.length} items insertados correctamente:`, 
+    JSON.stringify(data, null, 2));
   
   return data;
 }
@@ -487,12 +637,22 @@ async function getCourseNameAndCategory(courseId: string): Promise<{ name: strin
   }
 }
 
-// Modificar la función getCourseExcelFile para trabajar con la nueva estructura
+// Modificar la función getCourseExcelFile para manejar packs completos
 export async function getCourseExcelFile(
   courseId: string,
   category?: string,
   phase: string = "Fase 1"
-): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
+): Promise<{ 
+  data: Buffer | null;
+  filename: string | null;
+  contentType: string | null;
+  isPackComplete?: boolean;
+  packFiles?: Array<{
+    data: Buffer | null;
+    filename: string | null;
+    contentType: string | null;
+  }>;
+}> {
   try {
     // Obtener información del curso
     const { data: course } = await supabase
@@ -504,7 +664,35 @@ export async function getCourseExcelFile(
     if (!course) {
       return { data: null, filename: null, contentType: null };
     }
-    
+
+    // Verificar si es un pack completo
+    const isPackComplete = course.title.toLowerCase().includes('pack completo') ||
+                          course.category?.toLowerCase().includes('pack-completo');
+
+    if (isPackComplete) {
+      // Formatear la categoría base (sin el prefijo pack-completo)
+      const baseCategory = course.category
+        .toLowerCase()
+        .replace('pack-completo-', '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+      // Obtener todos los archivos del pack
+      const packFiles = await getPackCompleteFiles(baseCategory);
+
+      return {
+        data: null,
+        filename: null,
+        contentType: null,
+        isPackComplete: true,
+        packFiles
+      };
+    }
+
+    // Si no es un pack completo, continuar con la lógica existente
     // Formatear la categoría para la estructura de carpetas
     const categoryFolder = course.category
       .toLowerCase()
@@ -1130,4 +1318,69 @@ export async function getCoursesExcelFiles(courseIds: string[]): Promise<Array<{
   }
   
   return results;
+}
+
+async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
+  data: Buffer | null;
+  filename: string | null;
+  contentType: string | null;
+}>> {
+  const files = [];
+  const phases = ['fase-i-iniciacion', 'fase-ii-progresion', 'fase-iii-maestria'];
+
+  for (const phase of phases) {
+    try {
+      // Construir la ruta para cada fase
+      const phasePath = `${categoryFolder}/${phase}`;
+      
+      // Listar archivos en la carpeta de la fase
+      const { data: phaseFiles, error: listError } = await supabase
+        .storage
+        .from(BUCKET_COURSE_EXCEL)
+        .list(phasePath);
+
+      if (listError || !phaseFiles || phaseFiles.length === 0) {
+        console.warn(`No se encontraron archivos para la fase ${phase}`);
+        continue;
+      }
+
+      // Encontrar el archivo Excel
+      const excelFile = phaseFiles.find(f => 
+        f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+      );
+
+      if (!excelFile) {
+        console.warn(`No se encontró archivo Excel en ${phase}`);
+        continue;
+      }
+
+      // Descargar el archivo
+      const filePath = `${phasePath}/${excelFile.name}`;
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from(BUCKET_COURSE_EXCEL)
+        .download(filePath);
+
+      if (downloadError || !fileData) {
+        console.warn(`Error al descargar archivo de ${phase}:`, downloadError);
+        continue;
+      }
+
+      // Convertir a Buffer
+      const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+      const contentType = excelFile.name.endsWith('.xlsx')
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/vnd.ms-excel';
+
+      files.push({
+        data: buffer,
+        filename: excelFile.name,
+        contentType
+      });
+    } catch (error) {
+      console.error(`Error procesando fase ${phase}:`, error);
+    }
+  }
+
+  return files;
 } 

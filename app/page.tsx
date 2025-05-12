@@ -6,12 +6,32 @@ import TrainerProfile from './components/TrainerProfile'
 import GenderSelectionModal from '@/components/GenderSelectionModal'
 import { CourseCategory } from '@/components/courses/CourseCategory'
 
+// Mapeo de categorías masculinas a femeninas
+const FEMALE_CATEGORY_MAPPING = {
+  'Ganancia Muscular': 'Ganancia Muscular Mujeres',
+  'Pérdida de Grasa Corporal': 'Pérdida de Grasa Corporal Mujeres'
+};
+
 export default function Home() {
   const allCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal', 'Ganancia de Fuerza', 'Powerlifting']
   const femaleCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal']
   
   const [categories, setCategories] = useState<string[]>(allCategories)
+  const [displayCategories, setDisplayCategories] = useState<string[]>(allCategories)
   const [isFemale, setIsFemale] = useState<boolean>(false)
+  
+  // Actualizar las categorías mostradas cuando cambia isFemale
+  useEffect(() => {
+    if (isFemale) {
+      // Para mujeres, mapear a categorías específicas
+      const mappedCategories = categories.map(category => 
+        FEMALE_CATEGORY_MAPPING[category as keyof typeof FEMALE_CATEGORY_MAPPING] || category
+      );
+      setDisplayCategories(mappedCategories);
+    } else {
+      setDisplayCategories(categories);
+    }
+  }, [isFemale, categories]);
   
   // Configurar las categorías iniciales basadas en localStorage al cargar
   useEffect(() => {
@@ -43,6 +63,15 @@ export default function Home() {
       .replace(/[^\w-]+/g, '');
   };
 
+  // Filtrar cursos considerando género
+  const filterCoursesByCategory = (category: string) => {
+    // Para mujeres, busca cursos que coincidan con la categoría base
+    const baseCategory = Object.entries(FEMALE_CATEGORY_MAPPING)
+      .find(([_, femaleCategory]) => femaleCategory === category)?.[0] || category;
+    
+    return courses.filter(course => course.category === baseCategory);
+  };
+
   return (
     <>
     <div className="container mx-auto px-4 py-8">
@@ -50,16 +79,23 @@ export default function Home() {
       
       <TrainerProfile />
 
-      {categories.map((category) => (
+      {displayCategories.map((displayCategory, index) => {
+        // Filtrar cursos basados en la categoría visualizada
+        // Si es mujer, mostrar directamente los cursos de categorías femeninas (17-24)
+        // Si es hombre, mostrar los cursos de categorías masculinas (1-16)
+        const filteredCourses = courses.filter(course => course.category === displayCategory);
+        
+        return (
           <CourseCategory
-            key={category}
-            title={category}
-            id={getCategoryId(category)}
-            courses={courses.filter((course) => course.category === category)}
+            key={displayCategory}
+            title={displayCategory}
+            id={getCategoryId(displayCategory)}
+            courses={filteredCourses}
             isFemale={isFemale}
           />
-              ))}
-          </div>
+        );
+      })}
+    </div>
     </>
   )
 }

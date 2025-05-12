@@ -657,7 +657,7 @@ export async function getCourseExcelFile(
     // Obtener información del curso
     const { data: course } = await supabase
       .from('courses')
-      .select('title, category')
+      .select('title, category, description')
       .eq('id', courseId)
       .single();
     
@@ -665,13 +665,21 @@ export async function getCourseExcelFile(
       return { data: null, filename: null, contentType: null };
     }
 
+    // Verificar si el curso es para mujeres
+    const isForWomen = 
+      course.category?.toLowerCase().includes('mujer') || 
+      course.title?.toLowerCase().includes('mujer') ||
+      course.description?.toLowerCase().includes('mujer');
+
+    console.log(`Curso ${courseId} - ${course.title} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
+
     // Verificar si es un pack completo
     const isPackComplete = course.title.toLowerCase().includes('pack completo') ||
-                          course.category?.toLowerCase().includes('pack-completo');
+                           course.category?.toLowerCase().includes('pack-completo');
 
     if (isPackComplete) {
       // Formatear la categoría base (sin el prefijo pack-completo)
-      const baseCategory = course.category
+      let baseCategory = course.category
         .toLowerCase()
         .replace('pack-completo-', '')
         .normalize('NFD')
@@ -679,6 +687,18 @@ export async function getCourseExcelFile(
         .replace(/[^a-z0-9]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
+
+      // Si es para mujeres, asegurarse de que la categoría incluya "mujeres"
+      if (isForWomen && !baseCategory.includes('mujeres') && !baseCategory.includes('mujer')) {
+        // Intentar primero con 'mujer' (singular) basado en la estructura de directorios observada
+        baseCategory = `${baseCategory}-mujer`;
+        console.log(`Cambiando a formato singular para pack completo: ${baseCategory}`);
+      } else if (!isForWomen && (baseCategory.includes('mujeres') || baseCategory.includes('mujer'))) {
+        // Si no es para mujeres pero la categoría contiene "mujeres" o "mujer", quitarlo
+        baseCategory = baseCategory.replace('-mujeres', '').replace('-mujer', '');
+      }
+
+      console.log(`Categoría base para búsqueda: ${baseCategory}`);
 
       // Obtener todos los archivos del pack
       const packFiles = await getPackCompleteFiles(baseCategory);
@@ -694,13 +714,25 @@ export async function getCourseExcelFile(
 
     // Si no es un pack completo, continuar con la lógica existente
     // Formatear la categoría para la estructura de carpetas
-    const categoryFolder = course.category
+    let categoryFolder = course.category
       .toLowerCase()
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
+
+    // Si es para mujeres, asegurarse de que la categoría incluya "mujeres"
+    if (isForWomen && !categoryFolder.includes('mujeres') && !categoryFolder.includes('mujer')) {
+      // Intentar primero con 'mujer' (singular) basado en la estructura de directorios observada
+      categoryFolder = `${categoryFolder}-mujer`;
+      console.log(`Cambiando a formato singular para carpeta: ${categoryFolder}`);
+    } else if (!isForWomen && (categoryFolder.includes('mujeres') || categoryFolder.includes('mujer'))) {
+      // Si no es para mujeres pero la categoría contiene "mujeres" o "mujer", quitarlo
+      categoryFolder = categoryFolder.replace('-mujeres', '').replace('-mujer', '');
+    }
     
+    console.log(`Carpeta de categoría para búsqueda: ${categoryFolder}`);
+
     // Extraer el número de fase del título del curso
     const phaseMatch = course.title.match(/fase\s+(\w+):|fase\s+(\w+)|fase-(\w+)|fase(\w+)/i);
     let phaseIdentifier = "";
@@ -732,13 +764,44 @@ export async function getCourseExcelFile(
       .from(BUCKET_COURSE_EXCEL)
       .list(categoryFolder);
     
-    if (subfoldersError) {
-      // Intentar con estructura antigua si falla
-      return await originalGetCourseExcelFile(courseId, category, phase);
-    }
-    
-    if (!subfolders || subfolders.length === 0) {
-      // Intentar con estructura antigua si falla
+    if (subfoldersError || !subfolders || subfolders.length === 0) {
+      // Si no encontramos la carpeta y es una categoría para mujeres, intentar con la versión alternativa
+      if (isForWomen) {
+        // Probar con la versión en plural si estábamos buscando con singular
+        if (categoryFolder.includes('-mujer')) {
+          const alternateFolder = categoryFolder.replace('-mujer', '-mujeres');
+          console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
+          
+          const { data: altSubfolders, error: altError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .list(alternateFolder);
+            
+          if (!altError && altSubfolders && altSubfolders.length > 0) {
+            console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
+            categoryFolder = alternateFolder;
+            return await getCourseExcelFile(courseId, alternateFolder, phase);
+          }
+        } 
+        // Probar con la versión en singular si estábamos buscando con plural
+        else if (categoryFolder.includes('-mujeres')) {
+          const alternateFolder = categoryFolder.replace('-mujeres', '-mujer');
+          console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
+          
+          const { data: altSubfolders, error: altError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .list(alternateFolder);
+            
+          if (!altError && altSubfolders && altSubfolders.length > 0) {
+            console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
+            categoryFolder = alternateFolder;
+            return await getCourseExcelFile(courseId, alternateFolder, phase);
+          }
+        }
+      }
+      
+      // Si aún no encontramos nada, intentar con estructura antigua
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
@@ -1327,7 +1390,56 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
 }>> {
   const files = [];
   const phases = ['fase-i-iniciacion', 'fase-ii-progresion', 'fase-iii-maestria'];
+  const isForWomen = categoryFolder.includes('mujer');
 
+  console.log(`Buscando archivos para pack completo en categoría: ${categoryFolder} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
+
+  // Primero intentar con la categoría exacta
+  let foundFiles = await searchPackFilesInCategory(categoryFolder, phases);
+  
+  // Si no se encontraron archivos y es para mujeres, intentar también sin el sufijo "mujer"
+  if (foundFiles.length === 0 && isForWomen) {
+    const baseCategoryFolder = categoryFolder.replace('-mujer', '');
+    console.log(`No se encontraron archivos para mujeres, intentando con: ${baseCategoryFolder}-mujer`);
+    foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujer`, phases);
+    
+    // Si aún no se encontraron, intentar con "mujeres" (plural)
+    if (foundFiles.length === 0) {
+      console.log(`No se encontraron archivos con "mujer" (singular), intentando con: ${baseCategoryFolder}-mujeres`);
+      foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujeres`, phases);
+    }
+  }
+  
+  // Si aún no se encontraron archivos y es para mujeres, buscar en carpetas alternativas
+  if (foundFiles.length === 0 && isForWomen) {
+    console.log('Intentando con carpetas alternativas para mujeres');
+    // Intentar con variaciones comunes para mujeres
+    const alternativeCategories = [
+      'mujer',
+      'mujeres',
+      'ganancia-muscular-mujer',
+      'ganancia-muscular-mujeres',
+      'perdida-de-grasa-mujer',
+      'perdida-de-grasa-mujeres',
+      'fuerza-mujer',
+      'fuerza-mujeres'
+    ];
+    
+    for (const altCategory of alternativeCategories) {
+      foundFiles = await searchPackFilesInCategory(altCategory, phases);
+      if (foundFiles.length > 0) {
+        console.log(`Se encontraron archivos en carpeta alternativa: ${altCategory}`);
+        break;
+      }
+    }
+  }
+  
+  // Si se encontraron archivos, devolverlos
+  if (foundFiles.length > 0) {
+    return foundFiles;
+  }
+  
+  // Si no, recurrir al método original
   for (const phase of phases) {
     try {
       // Construir la ruta para cada fase
@@ -1383,4 +1495,125 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
   }
 
   return files;
+}
+
+// Nueva función auxiliar para buscar archivos en una categoría específica
+async function searchPackFilesInCategory(
+  categoryFolder: string, 
+  phases: string[]
+): Promise<Array<{
+  data: Buffer | null;
+  filename: string | null;
+  contentType: string | null;
+}>> {
+  const files = [];
+  
+  for (const phase of phases) {
+    try {
+      // Construir la ruta para cada fase
+      const phasePath = `${categoryFolder}/${phase}`;
+      
+      console.log(`Buscando en: ${phasePath}`);
+      
+      // Listar archivos en la carpeta de la fase
+      const { data: phaseFiles, error: listError } = await supabase
+        .storage
+        .from(BUCKET_COURSE_EXCEL)
+        .list(phasePath);
+
+      if (listError || !phaseFiles || phaseFiles.length === 0) {
+        continue;
+      }
+
+      // Encontrar el archivo Excel
+      const excelFile = phaseFiles.find(f => 
+        f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+      );
+
+      if (!excelFile) {
+        continue;
+      }
+
+      console.log(`Archivo encontrado: ${excelFile.name} en ${phasePath}`);
+
+      // Descargar el archivo
+      const filePath = `${phasePath}/${excelFile.name}`;
+      const { data: fileData, error: downloadError } = await supabase
+        .storage
+        .from(BUCKET_COURSE_EXCEL)
+        .download(filePath);
+
+      if (downloadError || !fileData) {
+        console.warn(`Error al descargar archivo de ${phase}:`, downloadError);
+        continue;
+      }
+
+      // Convertir a Buffer
+      const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+      const contentType = excelFile.name.endsWith('.xlsx')
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/vnd.ms-excel';
+
+      files.push({
+        data: buffer,
+        filename: excelFile.name,
+        contentType
+      });
+    } catch (error) {
+      console.error(`Error procesando fase ${phase} en ${categoryFolder}:`, error);
+    }
+  }
+  
+  return files;
+}
+
+// Función para obtener los archivos Excel para un curso
+async function getExcelFilesForCourse(courseId: string) {
+  try {
+    // Obtener información del curso para saber si es para mujeres
+    const { data: course } = await supabase
+      .from('courses')
+      .select('title, category, description')
+      .eq('id', courseId)
+      .single();
+
+    if (!course) {
+      console.error(`No se encontró información del curso con ID ${courseId}`);
+      return [];
+    }
+
+    // Verificar si el curso es para mujeres
+    const isForWomen = 
+      course.category?.toLowerCase().includes('mujer') || 
+      course.title?.toLowerCase().includes('mujer') ||
+      course.description?.toLowerCase().includes('mujer');
+
+    console.log(`Curso ${courseId} - ${course.title} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
+
+    // Obtener el resultado del curso con las modificaciones necesarias para mujeres
+    const result = await getCourseExcelFile(courseId);
+    
+    if (result.isPackComplete && result.packFiles) {
+      // Si es un pack completo, devolver todos los archivos
+      return result.packFiles.filter(file => 
+        file.data !== null && file.filename !== null && file.contentType !== null
+      ).map(file => ({
+        filename: file.filename!,
+        content: file.data!,
+        contentType: file.contentType!
+      }));
+    } else if (result.data && result.filename && result.contentType) {
+      // Si es un curso individual, devolver ese archivo
+      return [{
+        filename: result.filename,
+        content: result.data,
+        contentType: result.contentType
+      }];
+    }
+    
+    return [];
+  } catch (error) {
+    console.error(`Error al obtener archivos Excel para curso ${courseId}:`, error);
+    return [];
+  }
 } 

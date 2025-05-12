@@ -6,6 +6,7 @@ import { validateData, transactionSchema, sanitizeText, sanitizeId } from '@/lib
 import { createSecureTransaction, checkTransactionReplay } from '@/lib/transaction-security';
 import { logTransaction, logValidationError, logSuspiciousActivity } from '@/lib/logger';
 import { supabase } from '@/lib/supabase';
+import { cookies } from 'next/headers';
 
 // No definimos CORS aquí porque ya lo maneja el middleware global
 
@@ -212,10 +213,17 @@ export async function POST(request: NextRequest) {
           // Al haberse cambiado los IDs a UUIDs, debemos buscar los cursos por título
           const courseTitles = cart.map((item: any) => item.title);
           console.log('🔍 Buscando cursos con títulos:', courseTitles);
-          
+
+          // Verificar si se está comprando como mujer
+          const cookieStore = cookies();
+          const selectedGender = cookieStore.get('selectedGender')?.value || 'male';
+          const isFemale = selectedGender === 'female';
+          console.log(`👤 Género seleccionado: ${selectedGender} (¿Es mujer?: ${isFemale ? 'SÍ' : 'NO'})`);
+
+          // Obtener los cursos según el título, pero filtrando por género si es necesario
           const { data: courses, error: coursesError } = await supabase
             .from('courses')
-            .select('id, title, price')
+            .select('id, title, price, category')
             .in('title', courseTitles);
             
           if (coursesError) {
@@ -228,10 +236,25 @@ export async function POST(request: NextRequest) {
             throw new Error('No se encontraron los cursos en la base de datos');
           }
           
-          console.log('✅ Cursos encontrados:', JSON.stringify(courses, null, 2));
+          console.log('✅ Cursos encontrados (sin filtrar):', JSON.stringify(courses, null, 2));
+          
+          // Filtrar los cursos según el género
+          const filteredCourses = courses.filter(course => {
+            if (isFemale) {
+              // Si es mujer, priorizar cursos específicos para mujeres
+              return course.category?.includes('Mujeres');
+            } else {
+              // Si es hombre, excluir cursos para mujeres
+              return !course.category?.includes('Mujeres');
+            }
+          });
+          
+          // Si no hay cursos específicos para el género, usar los originales
+          const coursesToUse = filteredCourses.length > 0 ? filteredCourses : courses;
+          console.log(`✅ Cursos filtrados por género (${isFemale ? 'mujer' : 'hombre'}):`, JSON.stringify(coursesToUse, null, 2));
           
           // Crear un mapa de IDs y precios por título de curso
-          const courseMap = new Map(courses.map(course => [course.title, { id: course.id, price: course.price }]));
+          const courseMap = new Map(coursesToUse.map(course => [course.title, { id: course.id, price: course.price }]));
           
           const items = cart.map((item: any) => {
             const courseInfo = courseMap.get(item.title);

@@ -204,5 +204,87 @@ export const courses: Course[] = [
     image: packpower,
     category: "Powerlifting",
   },
+  // Cursos específicos para mujeres - Ganancia Muscular
+  {
+    id: "17",
+    title: "Fase I: Iniciación Mujer",
+    description:
+      "Esta fase está diseñada para crear una adaptación al entrenamiento, centrada en movimientos fundamentales y desarrollo de una base sólida de fuerza. Se trabajará en la correcta ejecución de ejercicios y en aumentar la resistencia muscular general.",
+    price: 20000,
+    duration: "4 semanas",
+    image: gananciaM1,
+    category: "Ganancia Muscular Mujeres",
+  },
+  {
+    id: "18",
+    title: "Fase II: Progresión Mujer",
+    description:
+      "En esta fase se implementarán ejercicios más avanzados y métodos de entrenamiento complejos que desafiarán tus músculos y acelerarán el crecimiento. La intensidad aumentará progresivamente para mejorar la hipertrofia y la fuerza muscular.",
+    price: 20000,
+    duration: "4 semanas",
+    image: gananciaM2,
+    category: "Ganancia Muscular Mujeres",
+  },
+  {
+    id: "19",
+    title: "Fase III: Maestría Mujer",
+    description:
+      "Esta fase es el reto definitivo, donde pondrás a prueba todo tu potencial. Aquí, superarás tus límites con técnicas avanzadas y entrenamientos de alto volumen e intensidad. ¡Solo los más comprometidos logran el éxito total! Prepárate para una transformación épica en tu físico.",
+    price: 25000,
+    duration: "5 semanas",
+    image: gananciaM3,
+    category: "Ganancia Muscular Mujeres",
+  },
+  {
+    id: "20",
+    title: "Pack Completo: Ganancia Muscular Mujer",
+    description:
+      "Este es el paquete más completo y efectivo para quienes buscan transformar su cuerpo y maximizar la ganancia muscular. Incluye todas las fases del Plan 1: Ganancia Muscular (Iniciación, Progresión y Maestría) en un único programa integral.",
+    price: 50000,
+    duration: "13 semanas",
+    image: gananciaM4,
+    category: "Ganancia Muscular Mujeres",
+  },
+  // Cursos específicos para mujeres - Pérdida de Grasa Corporal
+  {
+    id: "21",
+    title: "Fase I: Preparación Mujer",
+    description:
+      "En esta fase, iniciaremos el proceso con ejercicios funcionales y trabajo cardiovascular moderado, ayudando a tu cuerpo a adaptarse al régimen de entrenamiento y comenzando la quema de grasa de manera efectiva. Crearemos la base para resultados sostenibles.",
+    price: 20000,
+    duration: "4 semanas",
+    image: perdidaM1,
+    category: "Pérdida de Grasa Corporal Mujeres",
+  },
+  {
+    id: "22",
+    title: "Fase II: Construcción Mujer",
+    description:
+      "En esta fase, se intensificarán las rutinas al combinar fuerza y cardio, lo que acelerará la quema de grasa mientras mantienes tu masa muscular. Con una dieta adecuada, construirás un cuerpo más tonificado y definido.",
+    price: 20000,
+    duration: "4 semanas",
+    image: perdidaM2,
+    category: "Pérdida de Grasa Corporal Mujeres",
+  },
+  {
+    id: "23",
+    title: "Fase III: Potenciación Mujer",
+    description:
+      "¡La fase definitiva! Aquí trabajaremos con entrenamientos de alta intensidad y técnicas avanzadas para maximizar la pérdida de grasa y definir tu cuerpo. Esta es la fase donde alcanzarás tus metas de definición total y mejor forma física. ¡Estás a punto de transformar tu cuerpo!",
+    price: 25000,
+    duration: "5 semanas",
+    image: perdidaM3,
+    category: "Pérdida de Grasa Corporal Mujeres",
+  },
+  {
+    id: "24",
+    title: "Pack Completo: Pérdida de Grasa Corporal Mujer",
+    description:
+      "Este es el programa definitivo para reducir grasa corporal mientras mantienes y defines tu musculatura. Incluye todas las fases del Plan 2: Pérdida de Grasa Corporal (Preparación, Construcción y Potenciación) en un único paquete diseñado para resultados duraderos.",
+    price: 50000,
+    duration: "13 semanas",
+    image: perdidaM4,
+    category: "Pérdida de Grasa Corporal Mujeres",
+  },
 ];
 

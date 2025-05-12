@@ -20,6 +20,14 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
     return typeof course.image === 'string' ? course.image : course.image.src;
   };
 
+  // Función para verificar si el curso debe mostrar "Próximamente"
+  const isComingSoon = () => {
+    const category = course.category?.toLowerCase() || '';
+    return category.includes('ganancia-muscular') || 
+           category.includes('powerlifting') ||
+           category.includes('ganancia de fuerza');
+  };
+
   // Función para obtener el ID correcto según el género
   const getCourseId = () => {
     // Si no es mujer, devolver el ID normal
@@ -60,7 +68,7 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
   };
 
   return (
-    <Card className="flex flex-col bg-gradient-to-b from-red-500 to-black h-full transition-transform hover:scale-105">
+    <Card className="flex flex-col bg-gradient-to-b from-red-500 to-black h-full transition-transform hover:scale-105 relative">
       <CardHeader className="text-white">
         <div className="relative w-full aspect-video mb-4 overflow-hidden rounded-md">
           <Image
@@ -82,14 +90,23 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
         </div>
       </CardContent>
       <CardFooter className="mt-auto pt-4">
-        <Link href={`/course/${getCourseId()}`} className="w-full">
+        {isComingSoon() ? (
           <Button 
-            className="w-full bg-red-600 hover:bg-red-700 transition-colors"
-            aria-label={`Ver detalles de ${course.title}`}
+            className="w-full bg-gray-500 hover:bg-gray-500 transition-colors cursor-not-allowed opacity-70"
+            disabled
           >
-            Ver Detalles
+            PRÓXIMAMENTE
           </Button>
-        </Link>
+        ) : (
+          <Link href={`/course/${getCourseId()}`} className="w-full">
+            <Button 
+              className="w-full bg-red-600 hover:bg-red-700 transition-colors"
+              aria-label={`Ver detalles de ${course.title}`}
+            >
+              Ver Detalles
+            </Button>
+          </Link>
+        )}
       </CardFooter>
     </Card>
   )

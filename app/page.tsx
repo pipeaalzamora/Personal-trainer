@@ -5,12 +5,17 @@ import { courses } from '@/lib/courses'
 import TrainerProfile from './components/TrainerProfile'
 import GenderSelectionModal from '@/components/GenderSelectionModal'
 import { CourseCategory } from '@/components/courses/CourseCategory'
+import Image from 'next/image'
+import logoImage from '@/public/logo.png'
 
 // Mapeo de categorías masculinas a femeninas
 const FEMALE_CATEGORY_MAPPING = {
   'Ganancia Muscular': 'Ganancia Muscular Mujeres',
   'Pérdida de Grasa Corporal': 'Pérdida de Grasa Corporal Mujeres'
 };
+
+// Fecha de lanzamiento - ajustar a la fecha real deseada
+const LAUNCH_DATE = new Date('2025-05-13T10:00:00');
 
 export default function Home() {
   const allCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal', 'Ganancia de Fuerza', 'Powerlifting']
@@ -19,6 +24,61 @@ export default function Home() {
   const [categories, setCategories] = useState<string[]>(allCategories)
   const [displayCategories, setDisplayCategories] = useState<string[]>(allCategories)
   const [isFemale, setIsFemale] = useState<boolean>(false)
+  const [showContent, setShowContent] = useState<boolean>(false)
+  const [countdown, setCountdown] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  
+  // Verificar si debe mostrar el contenido completo (basado en parámetro URL o fecha)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Verificar si la fecha actual es posterior a la fecha de lanzamiento
+      const currentDate = new Date();
+      
+      // Mostrar contenido si hay parámetro especial O si ya pasó la fecha de lanzamiento
+      if (urlParams.get('acceso') === 'preview2025' || currentDate >= LAUNCH_DATE) {
+        setShowContent(true);
+      }
+    }
+  }, []);
+  
+  // Cálculo del tiempo restante para el lanzamiento
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const difference = LAUNCH_DATE.getTime() - new Date().getTime();
+      
+      if (difference > 0) {
+        return {
+          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        };
+      }
+      
+      // Si el tiempo ha expirado, mostrar el contenido
+      setShowContent(true);
+      
+      return {
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0
+      };
+    };
+    
+    // Actualizar countdown cada segundo
+    const timer = setInterval(() => {
+      setCountdown(calculateTimeLeft());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
   
   // Actualizar las categorías mostradas cuando cambia isFemale
   useEffect(() => {
@@ -72,6 +132,59 @@ export default function Home() {
     return courses.filter(course => course.category === baseCategory);
   };
 
+  // Si no se debe mostrar el contenido, mostrar página de "Próximamente"
+  if (!showContent) {
+    return (
+      <div 
+        className="fixed inset-0 min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-red-600 to-black p-4 text-white z-50"
+        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+      >
+        <div className="text-center">
+          <div className="mb-6 flex justify-center">
+            <Image
+              src={logoImage}
+              alt="Logo Personal Trainer"
+              width={200}
+              height={200}
+              priority
+              className="rounded-full border-4 border-white shadow-lg"
+            />
+          </div>
+          
+          <h1 className="text-5xl font-bold mb-2">PRÓXIMAMENTE</h1>
+          <p className="text-xl mb-8">Estamos trabajando para lanzar nuestra plataforma muy pronto.</p>
+          
+          <div className="grid grid-cols-4 gap-4 text-center max-w-md mx-auto mb-10">
+            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
+              <div className="text-4xl font-bold">{countdown.days}</div>
+              <div className="text-sm uppercase">Días</div>
+            </div>
+            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
+              <div className="text-4xl font-bold">{countdown.hours}</div>
+              <div className="text-sm uppercase">Horas</div>
+            </div>
+            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
+              <div className="text-4xl font-bold">{countdown.minutes}</div>
+              <div className="text-sm uppercase">Minutos</div>
+            </div>
+            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
+              <div className="text-4xl font-bold">{countdown.seconds}</div>
+              <div className="text-sm uppercase">Segundos</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* CSS para ocultar navbar y footer */}
+        <style jsx global>{`
+          nav, footer {
+            display: none !important;
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Si se debe mostrar el contenido, mostrar la página normal
   return (
     <>
     <div className="container mx-auto px-4 py-8">

@@ -22,10 +22,16 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
 
   // Función para verificar si el curso debe mostrar "Próximamente"
   const isComingSoon = () => {
-    const category = course.category?.toLowerCase() || '';
-    return category.includes('ganancia-muscular') || 
-           category.includes('powerlifting') ||
-           category.includes('ganancia de fuerza');
+    // Verificar si existe un parámetro especial en la URL para acceso especial
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('acceso') === 'preview2024') {
+        return false;
+      }
+    }
+    
+    // Si no hay parámetro o no es correcto, todos los cursos mostrarán "PRÓXIMAMENTE"
+    return true;
   };
 
   // Función para obtener el ID correcto según el género

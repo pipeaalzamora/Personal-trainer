@@ -83,7 +83,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
         <CartProvider>
-          <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4" role="navigation" aria-label="Navegación principal">
+          <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4" role="navigation" aria-label="Navegación principal" id="main-nav">
             <div className="container mx-auto flex justify-between items-center">
               <div className="w-10"></div>
               <Link href="/" className="flex items-center justify-center" aria-label="Ir a la página principal">

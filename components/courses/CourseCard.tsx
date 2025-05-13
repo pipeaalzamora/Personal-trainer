@@ -25,13 +25,32 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
     // Verificar si existe un parámetro especial en la URL para acceso especial
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('acceso') === 'preview2024') {
+      if (urlParams.get('acceso') === 'preview2025') {
         return false;
       }
     }
     
-    // Si no hay parámetro o no es correcto, todos los cursos mostrarán "PRÓXIMAMENTE"
-    return true;
+    // Categorías que siempre mostrarán "PRÓXIMAMENTE" incluso después del lanzamiento
+    const category = course.category?.toLowerCase() || '';
+    const alwaysComingSoon = category.includes('powerlifting') || 
+                             category.includes('ganancia de fuerza');
+    
+    // Si es una categoría que siempre está en "PRÓXIMAMENTE", retornar true
+    if (alwaysComingSoon) {
+      return true;
+    }
+    
+    // Verificar si ya pasó la fecha de lanzamiento
+    if (typeof window !== 'undefined') {
+      const launchDate = new Date('2025-05-13T10:00:00');
+      // Si ya pasó la fecha de lanzamiento, Ganancia Muscular ya no muestra "PRÓXIMAMENTE"
+      if (new Date() >= launchDate) {
+        return false;
+      }
+    }
+    
+    // Antes del lanzamiento, Ganancia Muscular también muestra "PRÓXIMAMENTE"
+    return category.includes('ganancia-muscular');
   };
 
   // Función para obtener el ID correcto según el género

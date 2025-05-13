@@ -3,8 +3,8 @@ const DEFAULT_INTEGRATION_COMMERCE_CODE = '597055555532';
 const DEFAULT_INTEGRATION_API_KEY = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C';
 
 // Configuración de Transbank
-// Forzamos el uso del ambiente de integración sin importar el entorno
-export const isProduction = false; // Forzamos modo integración
+// Ahora usamos el ambiente de producción
+export const isProduction = true; // Cambiamos a producción
 
 // Obtener credenciales configuradas
 const configuredCommerceCode = process.env.TRANSBANK_COMMERCE_CODE;
@@ -15,17 +15,17 @@ const INTEGRATION_URL = 'https://webpay3gint.transbank.cl';
 const PRODUCTION_URL = 'https://webpay3g.transbank.cl';
 
 // Configuraciones específicas de Transbank
-export const COMMERCE_CODE = process.env.TRANSBANK_WEBPAY_COMMERCE_CODE_INTEGRATION;
-export const API_KEY = process.env.TRANSBANK_WEBPAY_API_KEY_INTEGRATION;
+export const COMMERCE_CODE = process.env.TRANSBANK_WEBPAY_COMMERCE_CODE;
+export const API_KEY = process.env.TRANSBANK_WEBPAY_API_KEY;
 
 export const config = {
-  // Siempre usamos credenciales de integración
-  commerceCode: (configuredCommerceCode || DEFAULT_INTEGRATION_COMMERCE_CODE),
-  apiKey: (configuredApiKey || DEFAULT_INTEGRATION_API_KEY),
-  environment: 'Integration', // Forzamos ambiente de integración
-  // Siempre usamos la URL de integración
-  webpayHost: INTEGRATION_URL,
-  // Configuración para tarjetas de prueba
+  // Usamos credenciales de producción
+  commerceCode: configuredCommerceCode,
+  apiKey: configuredApiKey,
+  environment: 'Production', // Cambiamos a ambiente de producción
+  // Usamos la URL de producción
+  webpayHost: PRODUCTION_URL,
+  // Configuración para tarjetas de prueba (ya no relevante en producción)
   testCards: {
     visa: {
       number: '4051885600446623',

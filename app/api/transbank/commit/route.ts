@@ -118,13 +118,17 @@ export async function POST(request: Request) {
     // URL de la API de confirmación de Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
     
+    // Asegurar que las credenciales no sean undefined
+    const commerceCode = config.commerceCode || '';
+    const apiKey = config.apiKey || '';
+    
     // Confirmar la transacción con Transbank
     const response = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Tbk-Api-Key-Id': config.commerceCode,
-        'Tbk-Api-Key-Secret': config.apiKey
+        'Tbk-Api-Key-Id': commerceCode,
+        'Tbk-Api-Key-Secret': apiKey
       }
     });
     

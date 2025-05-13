@@ -15,7 +15,7 @@ const FEMALE_CATEGORY_MAPPING = {
 };
 
 // Fecha de lanzamiento - ajustar a la fecha real deseada
-const LAUNCH_DATE = new Date('2025-05-13T10:00:00');
+const LAUNCH_DATE = new Date('2023-05-13T10:00:00'); // Fecha pasada para que la página esté lanzada
 
 export default function Home() {
   const allCategories = ['Ganancia Muscular', 'Pérdida de Grasa Corporal', 'Ganancia de Fuerza', 'Powerlifting']

@@ -42,7 +42,7 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
     
     // Verificar si ya pasó la fecha de lanzamiento
     if (typeof window !== 'undefined') {
-      const launchDate = new Date('2025-05-13T10:00:00');
+      const launchDate = new Date('2023-05-13T10:00:00');
       // Si ya pasó la fecha de lanzamiento, Ganancia Muscular ya no muestra "PRÓXIMAMENTE"
       if (new Date() >= launchDate) {
         return false;

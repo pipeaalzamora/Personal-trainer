@@ -139,7 +139,7 @@ export default function Home() {
         className="fixed inset-0 min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-red-600 to-black p-4 text-white z-50"
         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
       >
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto px-4">
           <div className="mb-6 flex justify-center">
             <Image
               src={logoImage}
@@ -151,25 +151,25 @@ export default function Home() {
             />
           </div>
           
-          <h1 className="text-5xl font-bold mb-2">PRÓXIMAMENTE</h1>
-          <p className="text-xl mb-8">Estamos trabajando para lanzar nuestra plataforma muy pronto.</p>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">PRÓXIMAMENTE</h1>
+          <p className="text-lg sm:text-xl mb-6 sm:mb-8">Estamos trabajando para lanzar nuestra plataforma muy pronto.</p>
           
-          <div className="grid grid-cols-4 gap-4 text-center max-w-md mx-auto mb-10">
-            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
-              <div className="text-4xl font-bold">{countdown.days}</div>
-              <div className="text-sm uppercase">Días</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-center max-w-md mx-auto mb-6 sm:mb-10">
+            <div className="bg-black bg-opacity-40 p-2 sm:p-4 rounded-lg shadow-lg">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold">{countdown.days}</div>
+              <div className="text-xs sm:text-sm uppercase">Días</div>
             </div>
-            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
-              <div className="text-4xl font-bold">{countdown.hours}</div>
-              <div className="text-sm uppercase">Horas</div>
+            <div className="bg-black bg-opacity-40 p-2 sm:p-4 rounded-lg shadow-lg">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold">{countdown.hours}</div>
+              <div className="text-xs sm:text-sm uppercase">Horas</div>
             </div>
-            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
-              <div className="text-4xl font-bold">{countdown.minutes}</div>
-              <div className="text-sm uppercase">Minutos</div>
+            <div className="bg-black bg-opacity-40 p-2 sm:p-4 rounded-lg shadow-lg">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold">{countdown.minutes}</div>
+              <div className="text-xs sm:text-sm uppercase">Minutos</div>
             </div>
-            <div className="bg-black bg-opacity-40 p-4 rounded-lg shadow-lg">
-              <div className="text-4xl font-bold">{countdown.seconds}</div>
-              <div className="text-sm uppercase">Segundos</div>
+            <div className="bg-black bg-opacity-40 p-2 sm:p-4 rounded-lg shadow-lg">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold">{countdown.seconds}</div>
+              <div className="text-xs sm:text-sm uppercase">Segundos</div>
             </div>
           </div>
         </div>

@@ -24,7 +24,7 @@ export default function Home() {
   const [categories, setCategories] = useState<string[]>(allCategories)
   const [displayCategories, setDisplayCategories] = useState<string[]>(allCategories)
   const [isFemale, setIsFemale] = useState<boolean>(false)
-  const [showContent, setShowContent] = useState<boolean>(false)
+  const [showContent, setShowContent] = useState<boolean>(true)
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,
@@ -33,52 +33,21 @@ export default function Home() {
   });
   
   // Verificar si debe mostrar el contenido completo (basado en parámetro URL o fecha)
+  // Este efecto ya no es necesario porque showContent es true por defecto
+  // pero lo mantenemos por si en el futuro se necesita usar parámetros URL
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       
-      // Verificar si la fecha actual es posterior a la fecha de lanzamiento
-      const currentDate = new Date();
-      
-      // Mostrar contenido si hay parámetro especial O si ya pasó la fecha de lanzamiento
-      if (urlParams.get('acceso') === 'preview2025' || currentDate >= LAUNCH_DATE) {
-        setShowContent(true);
+      // Si hay un parámetro específico, podemos hacer algo con él
+      if (urlParams.get('acceso') === 'preview2025') {
+        // El contenido ya está visible por defecto
       }
     }
   }, []);
   
-  // Cálculo del tiempo restante para el lanzamiento
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const difference = LAUNCH_DATE.getTime() - new Date().getTime();
-      
-      if (difference > 0) {
-        return {
-          days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((difference % (1000 * 60)) / 1000)
-        };
-      }
-      
-      // Si el tiempo ha expirado, mostrar el contenido
-      setShowContent(true);
-      
-      return {
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0
-      };
-    };
-    
-    // Actualizar countdown cada segundo
-    const timer = setInterval(() => {
-      setCountdown(calculateTimeLeft());
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, []);
+  // Este efecto para el countdown ya no es necesario porque la fecha ya pasó
+  // Lo eliminamos para evitar cálculos innecesarios
   
   // Actualizar las categorías mostradas cuando cambia isFemale
   useEffect(() => {

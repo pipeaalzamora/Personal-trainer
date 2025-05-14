@@ -283,14 +283,14 @@ export async function createOrderItems(
     is_part_of_pack?: boolean;
   }
   
-  console.log('🔍 createOrderItems - INICIO - Recibidos:', JSON.stringify(items, null, 2));
+  // console.log('🔍 createOrderItems - INICIO - Recibidos:', JSON.stringify(items, null, 2));
   
   let processedItems: ProcessedOrderItem[] = [...items]; // Crear una copia de los items originales
   
   // Procesar packs completos
   for (const item of items) {
     try {
-      console.log(`🔍 Procesando item con course_id: ${item.course_id}`);
+      // console.log(`🔍 Procesando item con course_id: ${item.course_id}`);
       
       // Obtener información del curso para verificar si es un pack
       const { data: course, error: courseError } = await supabase
@@ -304,40 +304,40 @@ export async function createOrderItems(
         continue;
       }
       
-      console.log(`📋 Información del curso: ${JSON.stringify(course, null, 2)}`);
+      // console.log(`📋 Información del curso: ${JSON.stringify(course, null, 2)}`);
       
       // Verificar si es un pack completo basándose en el título o categoría
       const isPack = course?.title?.toLowerCase().includes('pack completo') || 
                     course?.category?.toLowerCase().includes('pack-completo');
       
-      console.log(`🧐 ¿Es un pack completo? ${isPack ? 'SÍ' : 'NO'}`);
+      // console.log(`🧐 ¿Es un pack completo? ${isPack ? 'SÍ' : 'NO'}`);
       
       if (isPack) {
-        console.log('📦 Detectado pack completo:', course.title);
+        // console.log('📦 Detectado pack completo:', course.title);
         
         // Determinar a qué categoría pertenece este pack
         const packCategory = course.category?.toLowerCase() || '';
         const titleLower = course.title?.toLowerCase() || '';
         
-        console.log(`📋 Categoría del pack: "${packCategory}", Título: "${titleLower}"`);
+        // console.log(`📋 Categoría del pack: "${packCategory}", Título: "${titleLower}"`);
         
         let categoryToSearch = '';
         
         // Obtener la categoría base del pack (por ejemplo, de "pack-completo-ganancia-muscular" extraer "ganancia-muscular")
         if (packCategory.includes('pack-completo-')) {
           categoryToSearch = packCategory.replace('pack-completo-', '');
-          console.log(`🔍 Categoría extraída del nombre de categoría: "${categoryToSearch}"`);
+          // console.log(`🔍 Categoría extraída del nombre de categoría: "${categoryToSearch}"`);
         } else if (titleLower.includes('pack completo')) {
           // Intentar extraer la categoría del título
           const parts = titleLower.split('pack completo');
           if (parts.length > 1) {
             categoryToSearch = parts[1].trim();
-            console.log(`🔍 Categoría extraída del título: "${categoryToSearch}"`);
+            // console.log(`🔍 Categoría extraída del título: "${categoryToSearch}"`);
           }
         }
         
         if (categoryToSearch) {
-          console.log('🔍 Buscando cursos en la categoría:', categoryToSearch);
+          // console.log('🔍 Buscando cursos en la categoría:', categoryToSearch);
           
           // Buscar todos los cursos individuales de esa categoría
           const { data: individualCourses, error: coursesError } = await supabase
@@ -351,12 +351,12 @@ export async function createOrderItems(
             continue;
           }
           
-          console.log(`📋 Cursos individuales encontrados (${individualCourses?.length || 0}):`, 
-            JSON.stringify(individualCourses, null, 2));
+          // console.log(`📋 Cursos individuales encontrados (${individualCourses?.length || 0}):`, 
+          //   JSON.stringify(individualCourses, null, 2));
           
           if (individualCourses && individualCourses.length > 0) {
-            console.log('✅ Cursos individuales encontrados:', 
-              individualCourses.map(c => `${c.title} (${c.category})`).join(', '));
+            // console.log('✅ Cursos individuales encontrados:', 
+            //   individualCourses.map(c => `${c.title} (${c.category})`).join(', '));
             
             // Agregar cada curso individual como un item adicional (precio 0 para no cobrar doble)
             const additionalItems = individualCourses.map(course => ({
@@ -365,24 +365,24 @@ export async function createOrderItems(
               is_part_of_pack: true
             }));
             
-            console.log(`📋 Items adicionales a agregar (${additionalItems.length}):`, 
-              JSON.stringify(additionalItems, null, 2));
+            // console.log(`📋 Items adicionales a agregar (${additionalItems.length}):`, 
+            //   JSON.stringify(additionalItems, null, 2));
             
             processedItems = [...processedItems, ...additionalItems];
             
-            console.log(`📋 Lista actualizada de processedItems (${processedItems.length}):`, 
-              JSON.stringify(processedItems, null, 2));
+            // console.log(`📋 Lista actualizada de processedItems (${processedItems.length}):`, 
+            //   JSON.stringify(processedItems, null, 2));
           } else {
             console.warn('⚠️ No se encontraron cursos individuales para el pack');
             
             // Intenta una búsqueda alternativa si no se encontraron cursos por categoría
-            console.log('🔍 Intentando búsqueda alternativa por categoría principal...');
+            // console.log('🔍 Intentando búsqueda alternativa por categoría principal...');
             
             // Extraer la categoría principal (ej: de "ganancia-muscular-mujeres" sacar "ganancia-muscular")
             const mainCategory = categoryToSearch.split('-').slice(0, 2).join('-');
             
             if (mainCategory && mainCategory !== categoryToSearch) {
-              console.log(`🔍 Buscando con categoría principal: "${mainCategory}"`);
+              // console.log(`🔍 Buscando con categoría principal: "${mainCategory}"`);
               
               const { data: altCourses, error: altError } = await supabase
                 .from('courses')
@@ -391,8 +391,8 @@ export async function createOrderItems(
                 .not('id', 'eq', item.course_id);
                 
               if (!altError && altCourses && altCourses.length > 0) {
-                console.log('✅ Cursos alternativos encontrados:', 
-                  altCourses.map(c => `${c.title} (${c.category})`).join(', '));
+                // console.log('✅ Cursos alternativos encontrados:', 
+                //   altCourses.map(c => `${c.title} (${c.category})`).join(', '));
                 
                 const altItems = altCourses.map(course => ({
                   course_id: course.id,
@@ -402,8 +402,8 @@ export async function createOrderItems(
                 
                 processedItems = [...processedItems, ...altItems];
                 
-                console.log(`📋 Lista actualizada con búsqueda alternativa (${processedItems.length}):`, 
-                  JSON.stringify(processedItems, null, 2));
+                // console.log(`📋 Lista actualizada con búsqueda alternativa (${processedItems.length}):`, 
+                //   JSON.stringify(processedItems, null, 2));
               } else {
                 console.warn('⚠️ No se encontraron cursos ni con la búsqueda alternativa');
               }
@@ -416,7 +416,7 @@ export async function createOrderItems(
     }
   }
   
-  console.log('📋 Items finales a insertar:', JSON.stringify(processedItems, null, 2));
+  // console.log('📋 Items finales a insertar:', JSON.stringify(processedItems, null, 2));
   
   // Crear los items de orden
   const orderItems = processedItems.map(item => ({
@@ -426,7 +426,7 @@ export async function createOrderItems(
     is_part_of_pack: item.is_part_of_pack || false
   }));
   
-  console.log(`📝 Insertando ${orderItems.length} items en la tabla order_items:`);
+  // console.log(`📝 Insertando ${orderItems.length} items en la tabla order_items:`);
   
   const { data, error } = await supabase
     .from('order_items')
@@ -438,8 +438,8 @@ export async function createOrderItems(
     throw error;
   }
   
-  console.log(`✅ ${data.length} items insertados correctamente:`, 
-    JSON.stringify(data, null, 2));
+  // console.log(`✅ ${data.length} items insertados correctamente:`, 
+  //   JSON.stringify(data, null, 2));
   
   return data;
 }
@@ -671,7 +671,7 @@ export async function getCourseExcelFile(
       course.title?.toLowerCase().includes('mujer') ||
       course.description?.toLowerCase().includes('mujer');
 
-    console.log(`Curso ${courseId} - ${course.title} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
+    // console.log(`Curso ${courseId} - ${course.title} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
 
     // Verificar si es un pack completo
     const isPackComplete = course.title.toLowerCase().includes('pack completo') ||
@@ -692,13 +692,13 @@ export async function getCourseExcelFile(
       if (isForWomen && !baseCategory.includes('mujeres') && !baseCategory.includes('mujer')) {
         // Intentar primero con 'mujer' (singular) basado en la estructura de directorios observada
         baseCategory = `${baseCategory}-mujer`;
-        console.log(`Cambiando a formato singular para pack completo: ${baseCategory}`);
+        // console.log(`Cambiando a formato singular para pack completo: ${baseCategory}`);
       } else if (!isForWomen && (baseCategory.includes('mujeres') || baseCategory.includes('mujer'))) {
         // Si no es para mujeres pero la categoría contiene "mujeres" o "mujer", quitarlo
         baseCategory = baseCategory.replace('-mujeres', '').replace('-mujer', '');
       }
 
-      console.log(`Categoría base para búsqueda: ${baseCategory}`);
+      // console.log(`Categoría base para búsqueda: ${baseCategory}`);
 
       // Obtener todos los archivos del pack
       const packFiles = await getPackCompleteFiles(baseCategory);
@@ -725,13 +725,13 @@ export async function getCourseExcelFile(
     if (isForWomen && !categoryFolder.includes('mujeres') && !categoryFolder.includes('mujer')) {
       // Intentar primero con 'mujer' (singular) basado en la estructura de directorios observada
       categoryFolder = `${categoryFolder}-mujer`;
-      console.log(`Cambiando a formato singular para carpeta: ${categoryFolder}`);
+      // console.log(`Cambiando a formato singular para carpeta: ${categoryFolder}`);
     } else if (!isForWomen && (categoryFolder.includes('mujeres') || categoryFolder.includes('mujer'))) {
       // Si no es para mujeres pero la categoría contiene "mujeres" o "mujer", quitarlo
       categoryFolder = categoryFolder.replace('-mujeres', '').replace('-mujer', '');
     }
     
-    console.log(`Carpeta de categoría para búsqueda: ${categoryFolder}`);
+    // console.log(`Carpeta de categoría para búsqueda: ${categoryFolder}`);
 
     // Extraer el número de fase del título del curso
     const phaseMatch = course.title.match(/fase\s+(\w+):|fase\s+(\w+)|fase-(\w+)|fase(\w+)/i);
@@ -770,7 +770,7 @@ export async function getCourseExcelFile(
         // Probar con la versión en plural si estábamos buscando con singular
         if (categoryFolder.includes('-mujer')) {
           const alternateFolder = categoryFolder.replace('-mujer', '-mujeres');
-          console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
+          // console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
           
           const { data: altSubfolders, error: altError } = await supabase
             .storage
@@ -778,7 +778,7 @@ export async function getCourseExcelFile(
             .list(alternateFolder);
             
           if (!altError && altSubfolders && altSubfolders.length > 0) {
-            console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
+            // console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
             categoryFolder = alternateFolder;
             return await getCourseExcelFile(courseId, alternateFolder, phase);
           }
@@ -786,7 +786,7 @@ export async function getCourseExcelFile(
         // Probar con la versión en singular si estábamos buscando con plural
         else if (categoryFolder.includes('-mujeres')) {
           const alternateFolder = categoryFolder.replace('-mujeres', '-mujer');
-          console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
+          // console.log(`No se encontró carpeta ${categoryFolder}, intentando con ${alternateFolder}`);
           
           const { data: altSubfolders, error: altError } = await supabase
             .storage
@@ -794,7 +794,7 @@ export async function getCourseExcelFile(
             .list(alternateFolder);
             
           if (!altError && altSubfolders && altSubfolders.length > 0) {
-            console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
+            // console.log(`✅ Carpeta alternativa encontrada: ${alternateFolder}`);
             categoryFolder = alternateFolder;
             return await getCourseExcelFile(courseId, alternateFolder, phase);
           }
@@ -872,44 +872,345 @@ export async function getCourseExcelFile(
       return await originalGetCourseExcelFile(courseId, category, phase);
     }
     
+    // Ordenar los archivos para asegurar que las fases estén en orden (I, II, III)
+    // Esto ayuda cuando necesitamos identificar archivos por posición numérica
+    const orderedExcelFiles = [...excelFiles].sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      
+      // Detectar números romanos o arábigos en los nombres
+      const getRomanOrNumber = (name: string) => {
+        if (name.includes('fase i') || name.includes('fase 1') || name.includes('fase-i') || name.includes('fase-1')) 
+          return 1;
+        if (name.includes('fase ii') || name.includes('fase 2') || name.includes('fase-ii') || name.includes('fase-2')) 
+          return 2;
+        if (name.includes('fase iii') || name.includes('fase 3') || name.includes('fase-iii') || name.includes('fase-3')) 
+          return 3;
+        return 999; // Valor alto para archivos sin número identificable
+      };
+      
+      const numA = getRomanOrNumber(nameA);
+      const numB = getRomanOrNumber(nameB);
+      
+      return numA - numB;
+    });
+    
+    // console.log(`Archivos ordenados por fase: ${orderedExcelFiles.map(f => f.name).join(', ')}`);
+    
     // Elegir el archivo más relevante, priorizando:
     // 1. Coincidencia exacta con la fase
     // 2. Archivo que contenga "Fase" + número/romano
     // 3. Primer archivo Excel disponible
     let targetExcelFile = null;
     
-    const exactMatchFile = excelFiles.find(f => 
-      f.name.toLowerCase() === `fase ${phaseIdentifier}.xlsx` || 
-      f.name.toLowerCase() === `fase-${phaseIdentifier}.xlsx` ||
-      f.name.toLowerCase() === `fase${phaseIdentifier}.xlsx` ||
-      f.name.toLowerCase() === `fase ${phaseIdentifier.toUpperCase()}.xlsx` ||
-      f.name.toLowerCase() === `fase-${phaseIdentifier.toUpperCase()}.xlsx` ||
-      f.name.toLowerCase() === `fase${phaseIdentifier.toUpperCase()}.xlsx`
-    );
+    // Mostremos todos los archivos disponibles para depuración
+    // console.log(`Archivos disponibles en ${folderPath}:`, excelFiles.map(f => f.name));
     
-    if (exactMatchFile) {
-      targetExcelFile = exactMatchFile;
-    } else {
-      // Buscar cualquier archivo con "Fase" + identificador
-      const phaseFile = excelFiles.find(f => 
-        f.name.toLowerCase().includes(`fase ${phaseIdentifier}`) || 
-        f.name.toLowerCase().includes(`fase-${phaseIdentifier}`) ||
-        f.name.toLowerCase().includes(`fase${phaseIdentifier}`) ||
-        f.name.toLowerCase().includes(`fase ${phaseIdentifier.toUpperCase()}`) ||
-        f.name.toLowerCase().includes(`fase-${phaseIdentifier.toUpperCase()}`) ||
-        f.name.toLowerCase().includes(`fase${phaseIdentifier.toUpperCase()}`)
+    // Si estamos buscando específicamente Fase I (iniciación o preparación), asegurar correspondencia exacta
+    if (phaseIdentifier.toLowerCase() === 'i') {
+      // console.log(`Buscando específicamente archivo para Fase I (${courseId})`);
+      
+      // Si el nombre de la carpeta de fase contiene "fase-ii" pero estamos buscando fase I, 
+      // esto indica que estamos en la carpeta incorrecta
+      if (matchedPhaseFolder.toLowerCase().includes('fase-ii') || 
+          matchedPhaseFolder.toLowerCase().includes('fase ii') ||
+          matchedPhaseFolder.toLowerCase().includes('fase 2') ||
+          matchedPhaseFolder.toLowerCase().includes('fase-2')) {
+        
+        // console.log(`⚠️ Advertencia: Estamos buscando Fase I pero estamos en carpeta de Fase II (${matchedPhaseFolder})`);
+        // console.log(`⚠️ Intentando encontrar la carpeta correcta para Fase I...`);
+        
+        // Buscar una carpeta que sea explícitamente para Fase I
+        const phaseIFolder = subfolders.find(f => {
+          const name = f.name.toLowerCase();
+          const isFaseIFolder = name.includes('fase-i') || 
+                               name.includes('fase i') || 
+                               name.includes('fase-1') || 
+                               name.includes('fase 1') ||
+                               name.includes('iniciacion') ||
+                               name.includes('preparacion');
+                               
+          const isNotFaseII = !name.includes('fase-ii') && 
+                             !name.includes('fase ii') && 
+                             !name.includes('fase-2') && 
+                             !name.includes('fase 2');
+          
+          return isFaseIFolder && isNotFaseII;
+        });
+        
+        if (phaseIFolder) {
+          // console.log(`✅ Encontrada carpeta específica para Fase I: ${phaseIFolder.name}`);
+          
+          // Usar esta carpeta en su lugar
+          const newMatchedPhaseFolder = phaseIFolder.name;
+          
+          // Actualizar la ruta de la carpeta y volver a obtener archivos
+          const newFolderPath = `${categoryFolder}/${newMatchedPhaseFolder}`;
+          
+          // console.log(`🔄 Cambiando a carpeta: ${newFolderPath}`);
+          
+          const { data: newFiles, error: newFilesError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .list(newFolderPath);
+          
+          if (!newFilesError && newFiles && newFiles.length > 0) {
+            // Crear nuevas listas de archivos
+            const newExcelFiles = newFiles.filter(f => 
+              f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+            );
+            
+            // console.log(`📋 Nuevos archivos Excel encontrados: ${newExcelFiles.map(f => f.name).join(', ')}`);
+            
+            // Si encontramos archivos Excel, actualizar todo para usar esta nueva carpeta
+            if (newExcelFiles.length > 0) {
+              // Ordenar los nuevos archivos
+              const newOrderedExcelFiles = [...newExcelFiles].sort((a, b) => {
+                const nameA = a.name.toLowerCase();
+                const nameB = b.name.toLowerCase();
+                
+                // Detectar números romanos o arábigos en los nombres
+                const getRomanOrNumber = (name: string) => {
+                  if (name.includes('fase i') || name.includes('fase 1') || name.includes('fase-i') || name.includes('fase-1')) 
+                    return 1;
+                  if (name.includes('fase ii') || name.includes('fase 2') || name.includes('fase-ii') || name.includes('fase-2')) 
+                    return 2;
+                  if (name.includes('fase iii') || name.includes('fase 3') || name.includes('fase-iii') || name.includes('fase-3')) 
+                    return 3;
+                  return 999;
+                };
+                
+                const numA = getRomanOrNumber(nameA);
+                const numB = getRomanOrNumber(nameB);
+                
+                return numA - numB;
+              });
+              
+              // Buscar archivo de fase I en esta nueva carpeta
+              const newPhaseOneFile = newOrderedExcelFiles.find(f => {
+                const lowerName = f.name.toLowerCase();
+                // Verificar que contenga fase i o fase 1
+                const containsFaseI = lowerName.includes('fase i') || 
+                                      lowerName.includes('fase-i') || 
+                                      lowerName.includes('fase 1') || 
+                                      lowerName.includes('fase-1') ||
+                                      lowerName.includes('iniciacion') ||
+                                      lowerName.includes('preparacion');
+                                      
+                // Verificar que NO contenga fase ii o fase iii
+                const containsFaseIIorIII = lowerName.includes('fase ii') || 
+                                           lowerName.includes('fase-ii') || 
+                                           lowerName.includes('fase 2') || 
+                                           lowerName.includes('fase-2') ||
+                                           lowerName.includes('fase iii') || 
+                                           lowerName.includes('fase-iii') || 
+                                           lowerName.includes('fase 3') || 
+                                           lowerName.includes('fase-3');
+                
+                return containsFaseI && !containsFaseIIorIII;
+              });
+              
+              if (newPhaseOneFile) {
+                // console.log(`✅ Encontrado archivo específico para Fase I en nueva carpeta: ${newPhaseOneFile.name}`);
+                
+                // Descargar el archivo
+                const newFilePath = `${newFolderPath}/${newPhaseOneFile.name}`;
+                
+                const { data: newFileData, error: newFileError } = await supabase
+                  .storage
+                  .from(BUCKET_COURSE_EXCEL)
+                  .download(newFilePath);
+                
+                if (!newFileError && newFileData) {
+                  // Convertir a Buffer
+                  const buffer = await newFileData.arrayBuffer().then(ab => Buffer.from(ab));
+                  
+                  // Determinar tipo de contenido
+                  const contentType = newPhaseOneFile.name.endsWith('.xlsx') 
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'application/vnd.ms-excel';
+                  
+                  // Retornar directamente
+                  return {
+                    data: buffer,
+                    filename: newPhaseOneFile.name,
+                    contentType
+                  };
+                }
+              }
+            }
+          }
+        } else {
+          // Si no encontramos una carpeta específica para Fase I, intentar búsqueda avanzada
+          // console.log(`⚠️ Iniciando búsqueda avanzada para Fase I de ${categoryFolder}...`);
+          
+          const advancedSearchResult = await findFaseIFileAnywhere(categoryFolder, isForWomen);
+          
+          if (advancedSearchResult && advancedSearchResult.data) {
+            // console.log(`✅ Búsqueda avanzada exitosa: encontrado archivo ${advancedSearchResult.filename}`);
+            return advancedSearchResult;
+          }
+          
+          // Si la búsqueda avanzada falla, intentar la búsqueda en raíz como último recurso
+          // console.log(`⚠️ No se encontró carpeta específica para Fase I, buscando en raíz: ${categoryFolder}`);
+          
+          const { data: rootFiles, error: rootError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .list(categoryFolder);
+            
+          if (!rootError && rootFiles && rootFiles.length > 0) {
+            // Filtrar archivos Excel en la raíz
+            const rootExcelFiles = rootFiles.filter(f => 
+              f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+            );
+            
+            if (rootExcelFiles.length > 0) {
+              // console.log(`📋 Archivos Excel encontrados en raíz: ${rootExcelFiles.map(f => f.name).join(', ')}`);
+              
+              // Buscar archivo de fase I en la raíz
+              const faseIFile = rootExcelFiles.find(f => {
+                const lowerName = f.name.toLowerCase();
+                return (lowerName.includes('fase i') || 
+                        lowerName.includes('fase-i') || 
+                        lowerName.includes('fase 1') || 
+                        lowerName.includes('fase-1') ||
+                        lowerName.includes('iniciacion') ||
+                        lowerName.includes('preparacion')) &&
+                       !(lowerName.includes('fase ii') || 
+                         lowerName.includes('fase-ii') || 
+                         lowerName.includes('fase 2') || 
+                         lowerName.includes('fase-2'));
+              });
+              
+              if (faseIFile) {
+                // console.log(`✅ Encontrado archivo de Fase I en raíz: ${faseIFile.name}`);
+                
+                // Descargar archivo
+                const rootFilePath = `${categoryFolder}/${faseIFile.name}`;
+                
+                const { data: rootFileData, error: rootFileError } = await supabase
+                  .storage
+                  .from(BUCKET_COURSE_EXCEL)
+                  .download(rootFilePath);
+                  
+                if (!rootFileError && rootFileData) {
+                  // Convertir a Buffer
+                  const buffer = await rootFileData.arrayBuffer().then(ab => Buffer.from(ab));
+                  
+                  // Determinar tipo de contenido
+                  const contentType = faseIFile.name.endsWith('.xlsx') 
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'application/vnd.ms-excel';
+                  
+                  // Devolver este archivo directamente
+                  return {
+                    data: buffer,
+                    filename: faseIFile.name,
+                    contentType
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Buscar archivo que contenga exactamente "fase i" o "fase 1" en el nombre (no fase ii ni fase iii)
+      const phaseOneFile = orderedExcelFiles.find(f => {
+        const lowerName = f.name.toLowerCase();
+        // Verificar que contenga fase i o fase 1
+        const containsFaseI = lowerName.includes('fase i') || 
+                              lowerName.includes('fase-i') || 
+                              lowerName.includes('fase 1') || 
+                              lowerName.includes('fase-1') ||
+                              lowerName.includes('iniciacion') ||
+                              lowerName.includes('preparacion');
+                              
+        // Verificar que NO contenga fase ii o fase iii (para evitar falsos positivos)
+        const containsFaseIIorIII = lowerName.includes('fase ii') || 
+                                    lowerName.includes('fase-ii') || 
+                                    lowerName.includes('fase 2') || 
+                                    lowerName.includes('fase-2') ||
+                                    lowerName.includes('fase iii') || 
+                                    lowerName.includes('fase-iii') || 
+                                    lowerName.includes('fase 3') || 
+                                    lowerName.includes('fase-3');
+        
+        return containsFaseI && !containsFaseIIorIII;
+      });
+      
+      if (phaseOneFile) {
+        // console.log(`✅ Encontrado archivo específico Fase I: ${phaseOneFile.name}`);
+        targetExcelFile = phaseOneFile;
+      } else if (orderedExcelFiles.length >= 3) {
+        // Si tenemos al menos 3 archivos y están ordenados por fase, usar el primero
+        // console.log(`⚠️ No se encontró archivo específico para Fase I por nombre. Intentando por posición numérica.`);
+        
+        // Verificar si los archivos tienen nombres que sugieren un orden específico de fases
+        const hasPhaseNames = orderedExcelFiles.some(f => 
+          f.name.toLowerCase().includes('fase') || 
+          f.name.toLowerCase().includes('preparacion') || 
+          f.name.toLowerCase().includes('iniciacion')
+        );
+        
+        if (hasPhaseNames) {
+          // console.log(`✅ Usando el primer archivo del conjunto ordenado: ${orderedExcelFiles[0].name}`);
+          targetExcelFile = orderedExcelFiles[0];
+        }
+      } else {
+        // Si todo lo anterior falla, intentar búsqueda avanzada
+        // console.log(`⚠️ No se encuentra archivo de Fase I en carpeta actual. Iniciando búsqueda avanzada...`);
+        
+        const advancedSearchResult = await findFaseIFileAnywhere(categoryFolder, isForWomen);
+        
+        if (advancedSearchResult && advancedSearchResult.data) {
+          // console.log(`✅ Búsqueda avanzada exitosa: encontrado archivo ${advancedSearchResult.filename}`);
+          return advancedSearchResult;
+        }
+      }
+    }
+    
+    // Si no encontramos un archivo específico para Fase I, seguir con la lógica original
+    if (!targetExcelFile) {
+      const exactMatchFile = orderedExcelFiles.find(f => 
+        f.name.toLowerCase() === `fase ${phaseIdentifier}.xlsx` || 
+        f.name.toLowerCase() === `fase-${phaseIdentifier}.xlsx` ||
+        f.name.toLowerCase() === `fase${phaseIdentifier}.xlsx` ||
+        f.name.toLowerCase() === `fase ${phaseIdentifier.toUpperCase()}.xlsx` ||
+        f.name.toLowerCase() === `fase-${phaseIdentifier.toUpperCase()}.xlsx` ||
+        f.name.toLowerCase() === `fase${phaseIdentifier.toUpperCase()}.xlsx`
       );
       
-      if (phaseFile) {
-        targetExcelFile = phaseFile;
+      if (exactMatchFile) {
+        // console.log(`✅ Encontrado archivo por coincidencia exacta: ${exactMatchFile.name}`);
+        targetExcelFile = exactMatchFile;
       } else {
-        // Usar el primer archivo Excel
-        targetExcelFile = excelFiles[0];
+        // Buscar cualquier archivo con "Fase" + identificador
+        const phaseFile = orderedExcelFiles.find(f => 
+          f.name.toLowerCase().includes(`fase ${phaseIdentifier}`) || 
+          f.name.toLowerCase().includes(`fase-${phaseIdentifier}`) ||
+          f.name.toLowerCase().includes(`fase${phaseIdentifier}`) ||
+          f.name.toLowerCase().includes(`fase ${phaseIdentifier.toUpperCase()}`) ||
+          f.name.toLowerCase().includes(`fase-${phaseIdentifier.toUpperCase()}`) ||
+          f.name.toLowerCase().includes(`fase${phaseIdentifier.toUpperCase()}`)
+        );
+        
+        if (phaseFile) {
+          // console.log(`✅ Encontrado archivo por coincidencia parcial: ${phaseFile.name}`);
+          targetExcelFile = phaseFile;
+        } else {
+          // Usar el primer archivo Excel
+          // console.log(`⚠️ No se encontró coincidencia específica, usando primer archivo: ${orderedExcelFiles[0].name}`);
+          targetExcelFile = orderedExcelFiles[0];
+        }
       }
     }
     
     // Descargar el archivo seleccionado
     const filePath = `${folderPath}/${targetExcelFile.name}`;
+    
+    // console.log(`🔽 Descargando archivo: ${filePath}`);
     
     const { data: fileData, error: downloadError } = await supabase
       .storage
@@ -1001,6 +1302,8 @@ async function getCourseExcelFileFromPath(
   phase: string = "Fase 1"
 ): Promise<{ data: Buffer | null, filename: string | null, contentType: string | null }> {
   try {
+    // console.log(`🔍 Buscando en la ruta: ${coursePath}, fase: ${phase}`);
+    
     // Listar contenido de la carpeta
     const { data: files, error } = await supabase
       .storage
@@ -1011,17 +1314,71 @@ async function getCourseExcelFileFromPath(
       });
     
     if (error) {
+      console.error(`❌ Error al listar archivos en ruta ${coursePath}:`, error);
       throw error;
     }
     
     if (!files || files.length === 0) {
+      console.warn(`⚠️ No se encontraron archivos en la ruta: ${coursePath}`);
       return { data: null, filename: null, contentType: null };
     }
+    
+    // console.log(`📋 Archivos encontrados (${files.length}):`, files.map(f => f.name));
     
     let excelFile = null;
     
     // Estrategia de búsqueda:
     if (phase) {
+      // Verificar si estamos buscando específicamente la fase 1/I
+      const isFaseOne = phase.toLowerCase() === "fase 1" || 
+                        phase.toLowerCase() === "fase i";
+                        
+      if (isFaseOne) {
+        // console.log(`🎯 Buscando específicamente Fase 1/I`);
+        // Buscar archivos que contengan 'fase 1' o 'fase i' explícitamente
+        const faseOneFiles = files.filter(file => {
+          if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            const filename = file.name.toLowerCase();
+            
+            // Verificar que contenga fase i o fase 1
+            const containsFaseI = filename.includes('fase 1') || 
+                                  filename.includes('fase-1') || 
+                                  filename.includes('fase1') || 
+                                  filename.includes('fase i') || 
+                                  filename.includes('fase-i') ||
+                                  filename.includes('fasei') ||
+                                  filename.includes('iniciacion') ||
+                                  filename.includes('preparacion');
+                                  
+            // Verificar que NO contenga fase ii, fase 2, fase iii, o fase 3
+            const containsFaseIIorIII = filename.includes('fase 2') || 
+                                        filename.includes('fase-2') || 
+                                        filename.includes('fase2') ||
+                                        filename.includes('fase ii') || 
+                                        filename.includes('fase-ii') ||
+                                        filename.includes('faseii') ||
+                                        filename.includes('fase 3') || 
+                                        filename.includes('fase-3') || 
+                                        filename.includes('fase3') ||
+                                        filename.includes('fase iii') || 
+                                        filename.includes('fase-iii') ||
+                                        filename.includes('faseiii');
+            
+            return containsFaseI && !containsFaseIIorIII;
+          }
+          return false;
+        });
+        
+        if (faseOneFiles.length > 0) {
+          // console.log(`✅ Encontrados ${faseOneFiles.length} archivos de Fase 1:`, faseOneFiles.map(f => f.name));
+          // Usar el primer archivo que coincida con Fase 1
+          excelFile = faseOneFiles[0];
+        }
+      }
+    }
+      
+    // Si no encontramos un archivo específico para Fase 1, seguir con la lógica original
+    if (!excelFile && phase) {
       // 1. Si tenemos una fase específica, primero buscamos un archivo con ese nombre exacto
       const exactPhaseMatch = files.find(file => 
         file.name === `${phase}.xlsx` || 
@@ -1029,6 +1386,7 @@ async function getCourseExcelFileFromPath(
       );
       
       if (exactPhaseMatch) {
+        // console.log(`✅ Coincidencia exacta encontrada: ${exactPhaseMatch.name}`);
         excelFile = exactPhaseMatch;
       } else {
         // 2. Buscar coincidencia insensible a mayúsculas/minúsculas
@@ -1038,6 +1396,7 @@ async function getCourseExcelFileFromPath(
         );
         
         if (caseInsensitiveMatch) {
+          // console.log(`✅ Coincidencia insensible a mayúsculas encontrada: ${caseInsensitiveMatch.name}`);
           excelFile = caseInsensitiveMatch;
         }
       }
@@ -1051,6 +1410,7 @@ async function getCourseExcelFileFromPath(
       );
       
       if (anyExcelFile) {
+        // console.log(`⚠️ Usando primer archivo Excel disponible: ${anyExcelFile.name}`);
         excelFile = anyExcelFile;
       }
     }
@@ -1063,17 +1423,20 @@ async function getCourseExcelFileFromPath(
       );
       
       if (phaseFolder) {
+        // console.log(`🔍 Encontrada carpeta de fase, explorando dentro: ${coursePath}/${phaseFolder.name}`);
         // Si encontramos una carpeta de fase, buscamos dentro de ella
         return getCourseExcelFileFromPath(`${coursePath}/${phaseFolder.name}`, "");
       }
     }
     
     if (!excelFile) {
+      console.warn(`❌ No se encontró ningún archivo Excel en ${coursePath}`);
       return { data: null, filename: null, contentType: null };
     }
     
     // Obtener URL pública para descargar el archivo
     const filePath = `${coursePath}/${excelFile.name}`;
+    // console.log(`🔽 Descargando archivo: ${filePath}`);
     
     // Descargar el archivo
     const { data, error: downloadError } = await supabase
@@ -1082,10 +1445,12 @@ async function getCourseExcelFileFromPath(
       .download(filePath);
     
     if (downloadError) {
+      console.error(`❌ Error al descargar archivo ${filePath}:`, downloadError);
       throw downloadError;
     }
     
     if (!data) {
+      console.warn(`⚠️ No se obtuvo datos del archivo ${filePath}`);
       return { data: null, filename: null, contentType: null };
     }
     
@@ -1097,12 +1462,15 @@ async function getCourseExcelFileFromPath(
     // Convertir el archivo a Buffer
     const buffer = await data.arrayBuffer().then(arrayBuffer => Buffer.from(arrayBuffer));
     
+    // console.log(`✅ Archivo descargado exitosamente: ${excelFile.name}`);
+    
     return { 
       data: buffer, 
       filename: excelFile.name,
       contentType
     };
   } catch (error) {
+    console.error(`❌ Error en getCourseExcelFileFromPath para ${coursePath}:`, error);
     return { data: null, filename: null, contentType: null };
   }
 }
@@ -1389,111 +1757,219 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
   contentType: string | null;
 }>> {
   const files = [];
+  // Estructuras de carpetas posibles para las fases
   const phases = ['fase-i-iniciacion', 'fase-ii-progresion', 'fase-iii-maestria'];
+  // Estructuras alternativas para nombres de fases
+  const alternativePhases = ['fase-1', 'fase-2', 'fase-3', 'fase-i', 'fase-ii', 'fase-iii', 'fase i', 'fase ii', 'fase iii'];
   const isForWomen = categoryFolder.includes('mujer');
 
-  console.log(`Buscando archivos para pack completo en categoría: ${categoryFolder} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
+  // console.log(`🔍 Buscando archivos para pack completo en categoría: ${categoryFolder} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
 
-  // Primero intentar con la categoría exacta
-  let foundFiles = await searchPackFilesInCategory(categoryFolder, phases);
+  // 1. PRIMERA ESTRATEGIA: Buscar en carpeta pack-completo específica
+  // console.log(`🔍 Estrategia 1: Buscando en carpeta pack-completo-${categoryFolder}`);
+  const packFolder = `${categoryFolder}/pack-completo-${categoryFolder}`;
   
-  // Si no se encontraron archivos y es para mujeres, intentar también sin el sufijo "mujer"
-  if (foundFiles.length === 0 && isForWomen) {
-    const baseCategoryFolder = categoryFolder.replace('-mujer', '');
-    console.log(`No se encontraron archivos para mujeres, intentando con: ${baseCategoryFolder}-mujer`);
-    foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujer`, phases);
-    
-    // Si aún no se encontraron, intentar con "mujeres" (plural)
-    if (foundFiles.length === 0) {
-      console.log(`No se encontraron archivos con "mujer" (singular), intentando con: ${baseCategoryFolder}-mujeres`);
-      foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujeres`, phases);
-    }
-  }
-  
-  // Si aún no se encontraron archivos y es para mujeres, buscar en carpetas alternativas
-  if (foundFiles.length === 0 && isForWomen) {
-    console.log('Intentando con carpetas alternativas para mujeres');
-    // Intentar con variaciones comunes para mujeres
-    const alternativeCategories = [
-      'mujer',
-      'mujeres',
-      'ganancia-muscular-mujer',
-      'ganancia-muscular-mujeres',
-      'perdida-de-grasa-mujer',
-      'perdida-de-grasa-mujeres',
-      'fuerza-mujer',
-      'fuerza-mujeres'
-    ];
-    
-    for (const altCategory of alternativeCategories) {
-      foundFiles = await searchPackFilesInCategory(altCategory, phases);
-      if (foundFiles.length > 0) {
-        console.log(`Se encontraron archivos en carpeta alternativa: ${altCategory}`);
-        break;
-      }
-    }
-  }
-  
-  // Si se encontraron archivos, devolverlos
-  if (foundFiles.length > 0) {
-    return foundFiles;
-  }
-  
-  // Si no, recurrir al método original
-  for (const phase of phases) {
-    try {
-      // Construir la ruta para cada fase
-      const phasePath = `${categoryFolder}/${phase}`;
+  let packFiles = [];
+  try {
+    const { data: filesInPackFolder, error } = await supabase
+      .storage
+      .from(BUCKET_COURSE_EXCEL)
+      .list(packFolder);
+
+    if (!error && filesInPackFolder && filesInPackFolder.length > 0) {
+      // console.log(`✅ Encontrada carpeta pack-completo: ${packFolder} con ${filesInPackFolder.length} archivos`);
       
-      // Listar archivos en la carpeta de la fase
-      const { data: phaseFiles, error: listError } = await supabase
-        .storage
-        .from(BUCKET_COURSE_EXCEL)
-        .list(phasePath);
-
-      if (listError || !phaseFiles || phaseFiles.length === 0) {
-        console.warn(`No se encontraron archivos para la fase ${phase}`);
-        continue;
-      }
-
-      // Encontrar el archivo Excel
-      const excelFile = phaseFiles.find(f => 
+      // Filtrar solo archivos Excel
+      const excelFiles = filesInPackFolder.filter(f => 
         f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
       );
+      
+      if (excelFiles.length > 0) {
+        // console.log(`✅ Encontrados ${excelFiles.length} archivos Excel en ${packFolder}:`, 
+        //             excelFiles.map(f => f.name).join(', '));
+                    
+        // Ordenar archivos por fase
+        const sortedFiles = [...excelFiles].sort((a, b) => {
+          const nameA = a.name.toLowerCase();
+          const nameB = b.name.toLowerCase();
+          
+          // Detectar números romanos o arábigos en los nombres
+          const getRomanOrNumber = (name: string) => {
+            if (name.includes('fase i') || name.includes('fase 1') || name.includes('fase-i') || name.includes('fase-1')) 
+              return 1;
+            if (name.includes('fase ii') || name.includes('fase 2') || name.includes('fase-ii') || name.includes('fase-2')) 
+              return 2;
+            if (name.includes('fase iii') || name.includes('fase 3') || name.includes('fase-iii') || name.includes('fase-3')) 
+              return 3;
+            return 999;
+          };
+          
+          const numA = getRomanOrNumber(nameA);
+          const numB = getRomanOrNumber(nameB);
+          
+          return numA - numB;
+        });
+        
+        // console.log(`🔄 Archivos ordenados por fase:`, sortedFiles.map(f => f.name).join(', '));
+        
+        for (const excelFile of sortedFiles) {
+          try {
+            // Descargar el archivo
+            const filePath = `${packFolder}/${excelFile.name}`;
+            // console.log(`🔽 Descargando: ${filePath}`);
+            
+            const { data: fileData, error: downloadError } = await supabase
+              .storage
+              .from(BUCKET_COURSE_EXCEL)
+              .download(filePath);
 
-      if (!excelFile) {
-        console.warn(`No se encontró archivo Excel en ${phase}`);
-        continue;
+            if (!downloadError && fileData) {
+              // Convertir a Buffer
+              const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+              const contentType = excelFile.name.endsWith('.xlsx')
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : 'application/vnd.ms-excel';
+
+              packFiles.push({
+                data: buffer,
+                filename: excelFile.name,
+                contentType
+              });
+              
+              // console.log(`✅ Archivo ${excelFile.name} descargado exitosamente`);
+            } else {
+              console.warn(`⚠️ Error al descargar ${excelFile.name}:`, downloadError);
+            }
+          } catch (error) {
+            console.error(`❌ Error procesando archivo ${excelFile.name}:`, error);
+          }
+        }
       }
-
-      // Descargar el archivo
-      const filePath = `${phasePath}/${excelFile.name}`;
-      const { data: fileData, error: downloadError } = await supabase
-        .storage
-        .from(BUCKET_COURSE_EXCEL)
-        .download(filePath);
-
-      if (downloadError || !fileData) {
-        console.warn(`Error al descargar archivo de ${phase}:`, downloadError);
-        continue;
-      }
-
-      // Convertir a Buffer
-      const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
-      const contentType = excelFile.name.endsWith('.xlsx')
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        : 'application/vnd.ms-excel';
-
-      files.push({
-        data: buffer,
-        filename: excelFile.name,
-        contentType
-      });
-    } catch (error) {
-      console.error(`Error procesando fase ${phase}:`, error);
+    } else {
+      // console.log(`⚠️ No se encontró la carpeta ${packFolder} o está vacía`);
     }
+  } catch (error) {
+    console.error(`❌ Error listando archivos en ${packFolder}:`, error);
+  }
+  
+  // Si encontramos archivos en la carpeta pack-completo, usarlos
+  if (packFiles.length > 0) {
+    // console.log(`✅ Estrategia 1 exitosa: Se encontraron ${packFiles.length} archivos en carpeta pack-completo`);
+    return packFiles;
   }
 
+  // 2. SEGUNDA ESTRATEGIA: Intentar con la estructura original de carpetas de fase
+  // console.log(`🔍 Estrategia 2: Buscando en carpetas de fase estándar`);
+  let foundFiles = await searchPackFilesInCategory(categoryFolder, phases);
+  
+  // Si encontramos archivos, devolverlos
+  if (foundFiles.length > 0) {
+    // console.log(`✅ Estrategia 2 exitosa: Se encontraron ${foundFiles.length} archivos en carpetas de fase estándar`);
+    return foundFiles;
+  }
+
+  // 3. TERCERA ESTRATEGIA: Si no se encontraron archivos, intentar con nombres alternativos de fase
+  // console.log(`🔍 Estrategia 3: Buscando con nombres alternativos de fase`);
+  foundFiles = await searchPackFilesInCategory(categoryFolder, alternativePhases);
+  
+  // Si encontramos archivos, devolverlos
+  if (foundFiles.length > 0) {
+    // console.log(`✅ Estrategia 3 exitosa: Se encontraron ${foundFiles.length} archivos con nombres alternativos de fase`);
+    return foundFiles;
+  }
+
+  // 4. CUARTA ESTRATEGIA: Para mujeres, probar variaciones adicionales
+  if (isForWomen) {
+    // console.log(`🔍 Estrategia 4: Buscando variaciones para mujeres`);
+    // Si no se encontraron archivos y es para mujeres, intentar también sin el sufijo "mujer"
+    const baseCategoryFolder = categoryFolder.replace('-mujer', '');
+    
+    // Primero intentar con "-mujer"
+    // console.log(`🔍 Intentando con: ${baseCategoryFolder}-mujer`);
+    foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujer`, phases);
+    
+    // Si aún no encontramos, intentar con "-mujeres" (plural)
+    if (foundFiles.length === 0) {
+      // console.log(`🔍 Intentando con: ${baseCategoryFolder}-mujeres`);
+      foundFiles = await searchPackFilesInCategory(`${baseCategoryFolder}-mujeres`, phases);
+    }
+    
+    // Si aún no encontramos, intentar carpetas alternativas
+    if (foundFiles.length === 0) {
+      // console.log('🔍 Intentando con carpetas alternativas para mujeres');
+      // Intentar con variaciones comunes para mujeres
+      const alternativeCategories = [
+        'mujer',
+        'mujeres',
+        'ganancia-muscular-mujer',
+        'ganancia-muscular-mujeres',
+        'perdida-de-grasa-mujer',
+        'perdida-de-grasa-mujeres',
+        'fuerza-mujer',
+        'fuerza-mujeres'
+      ];
+      
+      for (const altCategory of alternativeCategories) {
+        foundFiles = await searchPackFilesInCategory(altCategory, phases);
+        if (foundFiles.length > 0) {
+          // console.log(`✅ Se encontraron archivos en carpeta alternativa: ${altCategory}`);
+          return foundFiles;
+        }
+      }
+    }
+    
+    // Si encontramos archivos con alguna estrategia para mujeres, devolverlos
+    if (foundFiles.length > 0) {
+      // console.log(`✅ Estrategia 4 exitosa: Se encontraron ${foundFiles.length} archivos en variaciones para mujeres`);
+      return foundFiles;
+    }
+  }
+  
+  // 5. QUINTA ESTRATEGIA: Última opción, buscar en la raíz
+  // console.log(`🔍 Estrategia 5: Buscando archivos Excel en raíz de ${categoryFolder}`);
+  try {
+    const { data: rootFiles, error } = await supabase
+      .storage
+      .from(BUCKET_COURSE_EXCEL)
+      .list(categoryFolder);
+      
+    if (!error && rootFiles && rootFiles.length > 0) {
+      // Filtrar archivos Excel en la raíz
+      const excelFiles = rootFiles.filter(f => 
+        f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+      );
+      
+      if (excelFiles.length > 0) {
+        // console.log(`✅ Encontrados ${excelFiles.length} archivos Excel en raíz de ${categoryFolder}`);
+        
+        for (const excelFile of excelFiles) {
+          // Descargar archivo
+          const filePath = `${categoryFolder}/${excelFile.name}`;
+          const { data: fileData, error: downloadError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .download(filePath);
+            
+          if (!downloadError && fileData) {
+            const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+            const contentType = excelFile.name.endsWith('.xlsx')
+              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              : 'application/vnd.ms-excel';
+              
+            files.push({
+              data: buffer,
+              filename: excelFile.name,
+              contentType
+            });
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`❌ Error buscando en raíz de ${categoryFolder}:`, error);
+  }
+  
+  // console.log(`ℹ️ Resultado final: ${files.length} archivos encontrados para pack completo`);
   return files;
 }
 
@@ -1508,12 +1984,14 @@ async function searchPackFilesInCategory(
 }>> {
   const files = [];
   
+  // console.log(`🔍 searchPackFilesInCategory: Buscando en ${categoryFolder} con fases: ${phases.join(', ')}`);
+  
   for (const phase of phases) {
     try {
       // Construir la ruta para cada fase
       const phasePath = `${categoryFolder}/${phase}`;
       
-      console.log(`Buscando en: ${phasePath}`);
+      // console.log(`🔍 Examinando: ${phasePath}`);
       
       // Listar archivos en la carpeta de la fase
       const { data: phaseFiles, error: listError } = await supabase
@@ -1526,45 +2004,264 @@ async function searchPackFilesInCategory(
       }
 
       // Encontrar el archivo Excel
-      const excelFile = phaseFiles.find(f => 
+      const excelFiles = phaseFiles.filter(f => 
         f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
       );
 
-      if (!excelFile) {
+      if (excelFiles.length === 0) {
         continue;
       }
+      
+      // console.log(`✅ Encontrados ${excelFiles.length} archivos Excel en ${phasePath}: ${excelFiles.map(f => f.name).join(', ')}`);
 
-      console.log(`Archivo encontrado: ${excelFile.name} en ${phasePath}`);
+      // Procesamos todos los archivos Excel encontrados en la carpeta
+      for (const excelFile of excelFiles) {
+        try {
+          // Descargar el archivo
+          const filePath = `${phasePath}/${excelFile.name}`;
+          // console.log(`🔽 Descargando: ${filePath}`);
+          
+          const { data: fileData, error: downloadError } = await supabase
+            .storage
+            .from(BUCKET_COURSE_EXCEL)
+            .download(filePath);
 
-      // Descargar el archivo
-      const filePath = `${phasePath}/${excelFile.name}`;
-      const { data: fileData, error: downloadError } = await supabase
-        .storage
-        .from(BUCKET_COURSE_EXCEL)
-        .download(filePath);
+          if (downloadError || !fileData) {
+            console.warn(`⚠️ Error al descargar archivo de ${phase}:`, downloadError);
+            continue;
+          }
 
-      if (downloadError || !fileData) {
-        console.warn(`Error al descargar archivo de ${phase}:`, downloadError);
-        continue;
+          // Convertir a Buffer
+          const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+          const contentType = excelFile.name.endsWith('.xlsx')
+            ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            : 'application/vnd.ms-excel';
+
+          files.push({
+            data: buffer,
+            filename: excelFile.name,
+            contentType
+          });
+          
+          // console.log(`✅ Archivo ${excelFile.name} descargado exitosamente`);
+        } catch (error) {
+          console.error(`❌ Error procesando archivo ${excelFile.name} en ${phase}:`, error);
+        }
       }
-
-      // Convertir a Buffer
-      const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
-      const contentType = excelFile.name.endsWith('.xlsx')
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        : 'application/vnd.ms-excel';
-
-      files.push({
-        data: buffer,
-        filename: excelFile.name,
-        contentType
-      });
     } catch (error) {
-      console.error(`Error procesando fase ${phase} en ${categoryFolder}:`, error);
+      console.error(`❌ Error procesando fase ${phase} en ${categoryFolder}:`, error);
     }
   }
   
+  // console.log(`ℹ️ searchPackFilesInCategory: Encontrados ${files.length} archivos en ${categoryFolder}`);
   return files;
+}
+
+// Nueva función auxiliar para buscar archivos de Fase I en cualquier lugar del sistema de archivos
+async function findFaseIFileAnywhere(courseCategory: string, isForWomen: boolean): Promise<{
+  data: Buffer | null;
+  filename: string | null;
+  contentType: string | null;
+} | null> {
+  // console.log(`🔍 Búsqueda avanzada: buscando archivo de Fase I para categoría ${courseCategory}`);
+  
+  // Posibles carpetas donde podría estar un archivo Fase I
+  const possibleCategoryFolders = [];
+  
+  // Añadir la categoría principal
+  possibleCategoryFolders.push(courseCategory);
+  
+  // Versiones alternativas para mujeres/hombres
+  if (isForWomen) {
+    if (courseCategory.includes('-mujer')) {
+      possibleCategoryFolders.push(courseCategory.replace('-mujer', '-mujeres'));
+      possibleCategoryFolders.push(courseCategory.replace('-mujer', ''));
+    } 
+    else if (courseCategory.includes('-mujeres')) {
+      possibleCategoryFolders.push(courseCategory.replace('-mujeres', '-mujer'));
+      possibleCategoryFolders.push(courseCategory.replace('-mujeres', ''));
+    }
+    else {
+      possibleCategoryFolders.push(`${courseCategory}-mujer`);
+      possibleCategoryFolders.push(`${courseCategory}-mujeres`);
+    }
+    
+    // Otras variaciones comunes
+    possibleCategoryFolders.push('perdida-de-grasa-mujer');
+    possibleCategoryFolders.push('perdida-de-grasa-mujeres');
+    possibleCategoryFolders.push('perdida-de-grasa-corporal-mujer');
+    possibleCategoryFolders.push('perdida-de-grasa-corporal-mujeres');
+  } else {
+    // Para hombres, quitar sufijos de mujer si están presentes
+    if (courseCategory.includes('-mujer') || courseCategory.includes('-mujeres')) {
+      possibleCategoryFolders.push(
+        courseCategory
+          .replace('-mujer', '')
+          .replace('-mujeres', '')
+      );
+    }
+  }
+  
+  // Variaciones para ambos
+  const baseName = courseCategory
+    .replace('-mujer', '')
+    .replace('-mujeres', '')
+    .replace('-corporal', '');
+  
+  possibleCategoryFolders.push(baseName);
+  
+  // Posibles subcarpetas de fase
+  const possiblePhaseFolders = [
+    'fase-i-iniciacion',
+    'fase-i-preparacion',
+    'fase-i',
+    'fase-1',
+    'fase-1-iniciacion',
+    'fase-1-preparacion',
+    'fase i',
+    'fase 1',
+    'iniciacion',
+    'preparacion'
+  ];
+  
+  // console.log(`🔍 Carpetas de categoría a buscar: ${possibleCategoryFolders.join(', ')}`);
+  // console.log(`🔍 Subcarpetas de fase a buscar: ${possiblePhaseFolders.join(', ')}`);
+  
+  // Buscar en todas las combinaciones
+  for (const categoryFolder of possibleCategoryFolders) {
+    // 1. Primero buscar directamente en la carpeta de categoría
+    try {
+      const { data: rootFiles, error: rootError } = await supabase
+        .storage
+        .from(BUCKET_COURSE_EXCEL)
+        .list(categoryFolder);
+        
+      if (!rootError && rootFiles && rootFiles.length > 0) {
+        // Buscar archivos Excel
+        const excelFiles = rootFiles.filter(f => 
+          f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+        );
+        
+        // Buscar archivo de Fase I
+        if (excelFiles.length > 0) {
+          // console.log(`🔍 Encontrados ${excelFiles.length} archivos Excel en ${categoryFolder}`);
+          
+          const faseIFile = excelFiles.find(f => {
+            const lowerName = f.name.toLowerCase();
+            return (lowerName.includes('fase i') || 
+                   lowerName.includes('fase-i') || 
+                   lowerName.includes('fase 1') || 
+                   lowerName.includes('fase-1') ||
+                   lowerName.includes('iniciacion') ||
+                   lowerName.includes('preparacion')) &&
+                  !(lowerName.includes('fase ii') || 
+                    lowerName.includes('fase-ii') || 
+                    lowerName.includes('fase 2') || 
+                    lowerName.includes('fase-2'));
+          });
+          
+          if (faseIFile) {
+            // console.log(`✅ Encontrado archivo de Fase I en carpeta raíz ${categoryFolder}: ${faseIFile.name}`);
+            
+            // Descargar el archivo
+            const filePath = `${categoryFolder}/${faseIFile.name}`;
+            const { data: fileData, error: fileError } = await supabase
+              .storage
+              .from(BUCKET_COURSE_EXCEL)
+              .download(filePath);
+              
+            if (!fileError && fileData) {
+              const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+              const contentType = faseIFile.name.endsWith('.xlsx') 
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : 'application/vnd.ms-excel';
+                
+              return {
+                data: buffer,
+                filename: faseIFile.name,
+                contentType
+              };
+            }
+          }
+        }
+        
+        // 2. Buscar en subcarpetas
+        for (const file of rootFiles) {
+          // Solo buscar en carpetas
+          if (file.metadata?.mimetype !== null) {
+            continue;
+          }
+          
+          // Verificar si la carpeta podría contener archivos de Fase I
+          const lowerName = file.name.toLowerCase();
+          const isFaseIFolder = possiblePhaseFolders.some(phase => lowerName.includes(phase)) ||
+                                lowerName.includes('fase') && !lowerName.includes('fase-ii') && !lowerName.includes('fase-iii');
+          
+          if (isFaseIFolder) {
+            // console.log(`🔍 Explorando subcarpeta potencial de Fase I: ${categoryFolder}/${file.name}`);
+            
+            // Listar archivos en esta subcarpeta
+            const { data: subFiles, error: subError } = await supabase
+              .storage
+              .from(BUCKET_COURSE_EXCEL)
+              .list(`${categoryFolder}/${file.name}`);
+              
+            if (!subError && subFiles && subFiles.length > 0) {
+              // Buscar archivos Excel
+              const excelFiles = subFiles.filter(f => 
+                f.name.endsWith('.xlsx') || f.name.endsWith('.xls')
+              );
+              
+              if (excelFiles.length > 0) {
+                // console.log(`🔍 Encontrados ${excelFiles.length} archivos Excel en ${categoryFolder}/${file.name}`);
+                
+                // Buscar archivo de Fase I, o simplemente tomar el primero si estamos en una carpeta de Fase I
+                const faseIFile = excelFiles.find(f => {
+                  const lowerName = f.name.toLowerCase();
+                  return (lowerName.includes('fase i') || 
+                         lowerName.includes('fase-i') || 
+                         lowerName.includes('fase 1') || 
+                         lowerName.includes('fase-1') ||
+                         lowerName.includes('iniciacion') ||
+                         lowerName.includes('preparacion')) &&
+                        !(lowerName.includes('fase ii') || 
+                          lowerName.includes('fase-ii') || 
+                          lowerName.includes('fase 2') || 
+                          lowerName.includes('fase-2'));
+                }) || excelFiles[0]; // Tomar el primero si no hay coincidencias específicas
+                
+                // Descargar el archivo
+                const filePath = `${categoryFolder}/${file.name}/${faseIFile.name}`;
+                // console.log(`✅ Usando archivo: ${filePath}`);
+                
+                const { data: fileData, error: fileError } = await supabase
+                  .storage
+                  .from(BUCKET_COURSE_EXCEL)
+                  .download(filePath);
+                  
+                if (!fileError && fileData) {
+                  const buffer = await fileData.arrayBuffer().then(ab => Buffer.from(ab));
+                  const contentType = faseIFile.name.endsWith('.xlsx') 
+                    ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    : 'application/vnd.ms-excel';
+                    
+                  return {
+                    data: buffer,
+                    filename: faseIFile.name,
+                    contentType
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error al buscar en ${categoryFolder}:`, error);
+    }
+  }
+  
+  return null;
 }
 
 // Función para obtener los archivos Excel para un curso
@@ -1587,8 +2284,6 @@ async function getExcelFilesForCourse(courseId: string) {
       course.category?.toLowerCase().includes('mujer') || 
       course.title?.toLowerCase().includes('mujer') ||
       course.description?.toLowerCase().includes('mujer');
-
-    console.log(`Curso ${courseId} - ${course.title} - ¿Es para mujeres?: ${isForWomen ? 'SÍ' : 'NO'}`);
 
     // Obtener el resultado del curso con las modificaciones necesarias para mujeres
     const result = await getCourseExcelFile(courseId);
@@ -1616,4 +2311,4 @@ async function getExcelFilesForCourse(courseId: string) {
     console.error(`Error al obtener archivos Excel para curso ${courseId}:`, error);
     return [];
   }
-} 
+}

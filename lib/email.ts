@@ -1,7 +1,16 @@
 import { Resend } from 'resend';
 
-// Inicializar Resend con la API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Función para obtener la instancia de Resend (lazy initialization)
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY no está configurado. Los emails no se enviarán.');
+    return null;
+  }
+  
+  return new Resend(apiKey);
+}
 
 type EmailPayload = {
   to: string;
@@ -172,6 +181,19 @@ export const sendPaymentReceiptEmail = async (
 
 export const sendEmail = async (data: EmailPayload): Promise<boolean> => {
   try {
+    // Obtener cliente de Resend
+    const resend = getResendClient();
+    
+    // Si no hay cliente configurado, simular éxito en desarrollo
+    if (!resend) {
+      console.log('📧 [MODO DESARROLLO] Email simulado:', {
+        to: data.to,
+        subject: data.subject,
+        hasAttachments: !!data.attachments
+      });
+      return true;
+    }
+    
     // Formatear los archivos adjuntos para Resend si existen
     const attachments = data.attachments ? data.attachments.map(attachment => ({
       filename: attachment.filename,

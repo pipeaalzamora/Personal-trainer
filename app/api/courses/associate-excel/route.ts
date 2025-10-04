@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { associateAllExcelFilesToCourses, associateExcelToCourse } from '@/lib/supabase-api';
+import { associateExcelToCourse } from '@/lib/supabase-api';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -66,19 +66,17 @@ export async function POST(request: Request) {
 // Asociar automáticamente todos los archivos Excel a sus cursos
 export async function GET(request: Request) {
   try {
-    console.log('Iniciando asociación automática de archivos Excel a cursos');
-    
-    const results = await associateAllExcelFilesToCourses();
+    console.log('Endpoint GET deshabilitado - función associateAllExcelFilesToCourses no implementada');
     
     return NextResponse.json(
       { 
-        success: true, 
-        results
+        success: false,
+        message: 'Esta funcionalidad no está implementada. Use el método POST para asociar archivos individuales.'
       },
-      { headers: corsHeaders }
+      { status: 501, headers: corsHeaders }
     );
   } catch (error) {
-    console.error('Error al asociar archivos Excel automáticamente:', error);
+    console.error('Error en endpoint GET:', error);
     return NextResponse.json(
       { 
         error: error instanceof Error ? error.message : 'Error desconocido',

@@ -43,7 +43,11 @@ export const supabase = createClient<Database>(
 // Función para validar la conexión (útil para diagnósticos)
 export async function testConnection() {
   try {
-    const { data, error } = await supabase.from('_postgres_version').select('*').limit(1);
+    // Usar la tabla 'users' que existe en la base de datos
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
     
     if (error) {
       console.error('Error al conectar con Supabase:', error);

@@ -42,7 +42,7 @@ export const courses: Course[] = [
     title: "Fase I: Iniciación",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: ganancia1,
     imageFemale: gananciaM1,
@@ -53,7 +53,7 @@ export const courses: Course[] = [
     title: "Fase II: Progresión",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: ganancia2,
     imageFemale: gananciaM2,
@@ -64,7 +64,7 @@ export const courses: Course[] = [
     title: "Fase III: Maestría",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: ganancia3,
     imageFemale: gananciaM3,
@@ -75,7 +75,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Ganancia Muscular",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: packmuscular,
     imageFemale: gananciaM4,
@@ -86,7 +86,7 @@ export const courses: Course[] = [
     title: "Fase I: Preparación",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: perdida1,
     imageFemale: perdidaM1,
@@ -97,7 +97,7 @@ export const courses: Course[] = [
     title: "Fase II: Construcción",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: perdida2,
     imageFemale: perdidaM2,
@@ -108,7 +108,7 @@ export const courses: Course[] = [
     title: "Fase III: Potenciación",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: perdida3,
     imageFemale: perdidaM3,
@@ -119,7 +119,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Pérdida de Grasa Corporal",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: packgrasa,
     imageFemale: perdidaM4,
@@ -130,7 +130,7 @@ export const courses: Course[] = [
     title: "Fase I: Despegue",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: fuerza1,
     category: "Ganancia de Fuerza",
@@ -140,7 +140,7 @@ export const courses: Course[] = [
     title: "Fase II: Impulso",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: fuerza2,
     category: "Ganancia de Fuerza",
@@ -150,7 +150,7 @@ export const courses: Course[] = [
     title: "Fase III: Dominio",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: fuerza3,
     category: "Ganancia de Fuerza",
@@ -160,7 +160,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Ganancia de Fuerza",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: packfuerza,
     category: "Ganancia de Fuerza",
@@ -170,7 +170,7 @@ export const courses: Course[] = [
     title: "Fase I: Base",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: power1,
     category: "Powerlifting",
@@ -180,7 +180,7 @@ export const courses: Course[] = [
     title: "Fase II: Crecimiento",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: porwer2,
     category: "Powerlifting",
@@ -190,7 +190,7 @@ export const courses: Course[] = [
     title: "Fase III: Élite",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: power3,
     category: "Powerlifting",
@@ -200,7 +200,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Powerlifting)",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: packpower,
     category: "Powerlifting",
@@ -211,7 +211,7 @@ export const courses: Course[] = [
     title: "Fase I: Iniciación Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: gananciaM1,
     category: "Ganancia Muscular Mujeres",
@@ -221,7 +221,7 @@ export const courses: Course[] = [
     title: "Fase II: Progresión Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: gananciaM2,
     category: "Ganancia Muscular Mujeres",
@@ -231,7 +231,7 @@ export const courses: Course[] = [
     title: "Fase III: Maestría Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: gananciaM3,
     category: "Ganancia Muscular Mujeres",
@@ -241,7 +241,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Ganancia Muscular Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: gananciaM4,
     category: "Ganancia Muscular Mujeres",
@@ -252,7 +252,7 @@ export const courses: Course[] = [
     title: "Fase I: Preparación Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: perdidaM1,
     category: "Pérdida de Grasa Corporal Mujeres",
@@ -262,7 +262,7 @@ export const courses: Course[] = [
     title: "Fase II: Construcción Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 20000,
+    price: 15000,
     duration: "4 semanas",
     image: perdidaM2,
     category: "Pérdida de Grasa Corporal Mujeres",
@@ -272,7 +272,7 @@ export const courses: Course[] = [
     title: "Fase III: Potenciación Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 25000,
+    price: 15000,
     duration: "5 semanas",
     image: perdidaM3,
     category: "Pérdida de Grasa Corporal Mujeres",
@@ -282,7 +282,7 @@ export const courses: Course[] = [
     title: "Pack Completo: Pérdida de Grasa Corporal Mujer",
     description:
       "¿Qué incluye este curso?\n\n✔️ Archivo descargable en formato Excel diseñado para guiarte paso a paso en tu proceso de entrenamiento\n✔️ Hoja 1: Introducción con el objetivo del curso e instrucciones claras para su uso\n✔️ Hoja 2: Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales\n✔️ Hoja 3: Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta\n✔️ Hoja 4: Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos",
-    price: 50000,
+    price: 30000,
     duration: "13 semanas",
     image: perdidaM4,
     category: "Pérdida de Grasa Corporal Mujeres",

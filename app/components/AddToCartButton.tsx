@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
-import { Course } from '../../lib/courses'
+import { Course } from '@/hooks/useCourses'
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from "@/hooks/useCart"
 import { useRouter } from 'next/navigation'

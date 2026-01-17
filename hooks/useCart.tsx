@@ -1,10 +1,11 @@
 "use client"
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Course } from '../lib/courses';
+import { Course } from './useCourses';
+import { saveCartData, getCartData, clearCartData } from '@/lib/secure-storage';
 
 interface CartContextType {
   cart: Course[];
-  addToCart: (course: Course) => void;
+  addToCart: (course: Course) => boolean;
   removeFromCart: (courseId: number) => void;
   clearCart: () => void;
   cartCount: number;
@@ -14,14 +15,23 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Course[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   useEffect(() => {
-    // Cargar el carrito desde localStorage al iniciar
-    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    // Cargar el carrito desde cookies al iniciar
+    const savedCart = getCartData();
     setCart(savedCart);
+    setIsInitialized(true);
   }, []);
 
-  const addToCart = (course: Course) => {
+  // Guardar en cookies cuando cambia el carrito (solo después de inicializar)
+  useEffect(() => {
+    if (isInitialized) {
+      saveCartData(cart);
+    }
+  }, [cart, isInitialized]);
+
+  const addToCart = (course: Course): boolean => {
     // Verificar si el curso ya está en el carrito
     if (cart.some(item => item.id === course.id)) {
       return false;
@@ -30,21 +40,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Agregar el curso al carrito
     const updatedCart = [...cart, course];
     setCart(updatedCart);
-    
-    // Guardar en localStorage
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
     return true;
   };
 
   const removeFromCart = (courseId: number) => {
     const updatedCart = cart.filter(course => Number(course.id) !== courseId);
     setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
   };
 
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem('cart');
+    clearCartData();
   };
 
   return (
@@ -66,4 +72,4 @@ export function useCart() {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
-} 
+}

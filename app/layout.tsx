@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react';
 import Footer from '@/app/components/footer';
 import { CartProvider } from '@/hooks/useCart'
+import { CoursesProvider } from '@/hooks/useCourses'
 import CartIcon from '@/app/components/CartIcon';
 import Image from 'next/image';
 import logo from '@/public/logo.png';
@@ -82,6 +83,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${inter.className} bg-cover bg-center min-h-screen flex flex-col`} style={{ backgroundColor: '#000033' }}>
+        <CoursesProvider>
         <CartProvider>
           <nav className="bg-gradient-to-r from-red-500 to-black text-white p-4" role="navigation" aria-label="Navegación principal" id="main-nav">
             <div className="container mx-auto flex justify-between items-center">
@@ -109,6 +111,7 @@ export default function RootLayout({
           </main>
           <Footer/>
         </CartProvider>
+        </CoursesProvider>
         <Toaster />
       </body>
     </html>

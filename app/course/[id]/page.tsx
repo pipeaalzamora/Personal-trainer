@@ -1,6 +1,5 @@
 "use client";
-import { courses, Course } from "../../../lib/courses";
-import { notFound } from "next/navigation";
+
 import AddToCartButton from "../../components/AddToCartButton";
 import {
   Card,
@@ -11,26 +10,60 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useCourses, Course } from "@/hooks/useCourses";
+import { Loader2, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function CoursePage({ params }: { params: { id: string } }) {
-  const course = courses.find((c) => c.id === params.id);
+  const { courses, loading, getCourseById } = useCourses();
   const [isFemale, setIsFemale] = useState<boolean>(false);
+  const [course, setCourse] = useState<Course | undefined>(undefined);
+  const [searchComplete, setSearchComplete] = useState(false);
 
   useEffect(() => {
     const storedGender = localStorage.getItem("selectedGender");
-    if (storedGender === "female") {
-      setIsFemale(true);
-    } else {
-      setIsFemale(false);
-    }
+    setIsFemale(storedGender === "female");
   }, []);
 
-  if (!course) {
-    notFound();
+  useEffect(() => {
+    if (!loading && courses.length > 0) {
+      const foundCourse = getCourseById(params.id);
+      setCourse(foundCourse);
+      setSearchComplete(true);
+    }
+  }, [loading, courses, params.id, getCourseById]);
+
+  // Loading state
+  if (loading || !searchComplete) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 text-red-500 animate-spin mb-4" />
+        <p className="text-white text-lg">Cargando curso...</p>
+      </div>
+    );
   }
 
-  // Función para obtener la imagen correcta según el género
-  const getCorrectImage = (course: Course) => {
+  // Not found - mostrar página amigable en lugar de 404
+  if (searchComplete && !course) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
+        <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">Curso no encontrado</h1>
+        <p className="text-gray-300 mb-6">El curso que buscas no existe o ha sido eliminado.</p>
+        <Link href="/">
+          <Button className="bg-red-600 hover:bg-red-700">
+            Volver al inicio
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  if (!course) return null;
+
+  // Obtener la imagen correcta según el género
+  const getCorrectImage = () => {
     if (isFemale && course.imageFemale) {
       return typeof course.imageFemale === "string"
         ? course.imageFemale
@@ -44,7 +77,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <Image
-            src={getCorrectImage(course)}
+            src={getCorrectImage()}
             alt={course.title}
             width={500}
             height={400}

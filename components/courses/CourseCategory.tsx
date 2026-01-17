@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { CourseCard } from './CourseCard'
 import { Button } from "@/components/ui/button"
-import type { Course } from '@/lib/courses'
+import type { Course } from '@/hooks/useCourses'
 
 interface CourseCategoryProps {
   title: string
@@ -16,10 +16,13 @@ export function CourseCategory({ title, courses, isFemale, id }: CourseCategoryP
   const [showAll, setShowAll] = useState(false)
   const displayedCourses = showAll ? courses : courses.slice(0, 4)
 
+  // Formatear título para mostrar (quitar "Mujeres" si ya está implícito)
+  const displayTitle = title.replace(' Mujeres', '');
+
   return (
     <section id={id} className="mb-12">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-white">{title}</h2>
+        <h2 className="text-3xl font-bold text-white">{displayTitle}</h2>
         {courses.length > 4 && (
           <Button 
             variant="outline" 
@@ -42,4 +45,4 @@ export function CourseCategory({ title, courses, isFemale, id }: CourseCategoryP
       </div>
     </section>
   )
-} 
+}

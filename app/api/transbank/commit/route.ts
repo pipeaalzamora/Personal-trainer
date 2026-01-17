@@ -2,38 +2,35 @@ import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
 import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCourseExcelFile } from '@/lib/supabase-api';
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 
-// Cabeceras CORS para permitir peticiones desde el frontend
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-};
-
-// Manejador para solicitudes OPTIONS (pre-flight CORS)
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders
-  });
-}
+// CORS manejado por middleware global - no necesitamos headers aquí
 
 async function getExcelFilesForCourse(courseId: string) {
   try {
+    console.log(`getExcelFilesForCourse: Iniciando para curso ${courseId}`);
     const result = await getCourseExcelFile(courseId);
+    console.log(`getExcelFilesForCourse: Resultado recibido:`, {
+      hasData: !!result.data,
+      filename: result.filename,
+      isPackComplete: result.isPackComplete,
+      packFilesCount: result.packFiles?.length
+    });
     
     if (result.isPackComplete && result.packFiles) {
       // Si es un pack completo, devolver todos los archivos
-      return result.packFiles.filter(file => 
+      const files = result.packFiles.filter(file => 
         file.data !== null && file.filename !== null && file.contentType !== null
       ).map(file => ({
         filename: file.filename!,
         content: file.data!,
         contentType: file.contentType!
       }));
+      console.log(`getExcelFilesForCourse: Pack completo con ${files.length} archivos`);
+      return files;
     } else if (result.data && result.filename && result.contentType) {
       // Si es un curso individual, devolver ese archivo
+      console.log(`getExcelFilesForCourse: Curso individual, archivo: ${result.filename}`);
       return [{
         filename: result.filename,
         content: result.data,
@@ -41,6 +38,7 @@ async function getExcelFilesForCourse(courseId: string) {
       }];
     }
     
+    console.log(`getExcelFilesForCourse: No se encontraron archivos para curso ${courseId}`);
     return [];
   } catch (error) {
     console.error(`Error al obtener archivos Excel para curso ${courseId}:`, error);
@@ -51,11 +49,11 @@ async function getExcelFilesForCourse(courseId: string) {
 // Verificar si los correos ya fueron enviados para esta orden
 async function checkEmailsStatus(orderId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('orders')
       .select('emails_sent')
       .eq('id', orderId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error al verificar estado de correos:', error);
@@ -72,7 +70,7 @@ async function checkEmailsStatus(orderId: string): Promise<boolean> {
 // Marcar correos como enviados para esta orden
 async function markEmailsAsSent(orderId: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('orders')
       .update({ 
         emails_sent: true,
@@ -80,7 +78,7 @@ async function markEmailsAsSent(orderId: string): Promise<boolean> {
       })
       .eq('id', orderId)
       .select()
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('Error al marcar correos como enviados:', error);
@@ -111,7 +109,7 @@ export async function POST(request: Request) {
     if (!token) {
       return NextResponse.json(
         { error: 'Falta el token de transacción' },
-        { status: 400, headers: corsHeaders }
+        { status: 400 }
       );
     }
 
@@ -151,7 +149,7 @@ export async function POST(request: Request) {
     if (!existingOrder) {
       return NextResponse.json(
         { error: `No se encontró la orden con buy_order ${data.buy_order}` },
-        { status: 404, headers: corsHeaders }
+        { status: 404 }
       );
     }
     
@@ -201,11 +199,11 @@ export async function POST(request: Request) {
           // 2. Si no hay email en la transacción, intentar obtenerlo por user_id
           if (!email && updatedOrder.user_id) {
             try {
-              const { data: userData } = await supabase
+              const { data: userData } = await supabaseAdmin
                 .from('users')
                 .select('email')
                 .eq('id', updatedOrder.user_id)
-                .single();
+                .maybeSingle();
               
               if (userData && userData.email) {
                 email = userData.email;
@@ -234,7 +232,7 @@ export async function POST(request: Request) {
             
             if (!marked) {
               console.error('No se pudo marcar los correos como enviados, cancelando envío');
-              return NextResponse.json(data, { headers: corsHeaders });
+              return NextResponse.json(data);
             }
             
             // Obtener los items y títulos de cursos
@@ -271,6 +269,7 @@ export async function POST(request: Request) {
               
               try {
                 // Obtener archivos para cada curso
+                console.log(`Obteniendo archivos Excel para ${courseIds.length} cursos:`, courseIds);
                 for (const courseId of courseIds) {
                   const courseFiles = await getExcelFilesForCourse(courseId);
                   attachments = [...attachments, ...courseFiles];
@@ -313,12 +312,12 @@ export async function POST(request: Request) {
       }
     }
     
-    return NextResponse.json(data, { headers: corsHeaders });
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error en la ruta commit:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error desconocido' },
-      { status: 500, headers: corsHeaders }
+      { status: 500 }
     );
   }
 } 

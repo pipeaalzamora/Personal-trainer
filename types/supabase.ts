@@ -16,6 +16,7 @@ export interface Database {
           description: string
           price: number
           image_url: string | null
+          category: string | null
           created_at: string
           updated_at: string
         }
@@ -25,6 +26,7 @@ export interface Database {
           description: string
           price: number
           image_url?: string | null
+          category?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -34,6 +36,7 @@ export interface Database {
           description?: string
           price?: number
           image_url?: string | null
+          category?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -77,7 +80,10 @@ export interface Database {
           session_id: string
           transaction_token: string | null
           transaction_response: Json | null
+          emails_sent: boolean
+          emails_sent_at: string | null
           created_at: string
+          updated_at: string | null
         }
         Insert: {
           id?: string
@@ -88,7 +94,10 @@ export interface Database {
           session_id: string
           transaction_token?: string | null
           transaction_response?: Json | null
+          emails_sent?: boolean
+          emails_sent_at?: string | null
           created_at?: string
+          updated_at?: string | null
         }
         Update: {
           id?: string
@@ -99,7 +108,10 @@ export interface Database {
           session_id?: string
           transaction_token?: string | null
           transaction_response?: Json | null
+          emails_sent?: boolean
+          emails_sent_at?: string | null
           created_at?: string
+          updated_at?: string | null
         }
       }
       order_items: {
@@ -108,6 +120,7 @@ export interface Database {
           order_id: string
           course_id: string
           price: number
+          is_part_of_pack: boolean
           created_at: string
         }
         Insert: {
@@ -115,6 +128,7 @@ export interface Database {
           order_id: string
           course_id: string
           price: number
+          is_part_of_pack?: boolean
           created_at?: string
         }
         Update: {
@@ -122,6 +136,7 @@ export interface Database {
           order_id?: string
           course_id?: string
           price?: number
+          is_part_of_pack?: boolean
           created_at?: string
         }
       }

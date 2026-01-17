@@ -1,32 +1,20 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 
 // Verificar que las variables de entorno estén definidas
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Validación más estricta de las variables de entorno
+// Validación de las variables de entorno
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERROR CRÍTICO: Faltan las variables de entorno de Supabase:');
+  console.error('ERROR: Faltan las variables de entorno de Supabase:');
   if (!supabaseUrl) console.error('- NEXT_PUBLIC_SUPABASE_URL no está definido');
   if (!supabaseAnonKey) console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY no está definido');
-  
-  // En desarrollo, mostrar mensaje de ayuda
-  if (process.env.NODE_ENV === 'development') {
-    console.error('\nSOLUCIÓN: Asegúrate de crear un archivo .env.local con estas variables.');
-    console.error('Ejemplo de .env.local:');
-    console.error('NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co');
-    console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anon\n');
-  }
-  
-  // Cuando se ejecuta en el servidor, lanzar error para evitar que la aplicación se inicie sin estas variables
-  if (typeof window === 'undefined') {
-    throw new Error('Faltan las variables de entorno de Supabase. Revisa tu configuración.');
-  }
 }
 
-// Crear el cliente de Supabase con tipos
-export const supabase = createClient<Database>(
+// Cliente público (para el frontend)
+export const supabase: SupabaseClient<Database> = createClient<Database>(
   supabaseUrl || '',
   supabaseAnonKey || '',
   {
@@ -36,6 +24,18 @@ export const supabase = createClient<Database>(
     },
     global: {
       fetch: (...args) => fetch(...args),
+    },
+  }
+);
+
+// Cliente con service_role (para operaciones del servidor - bypasea RLS)
+export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
+  supabaseUrl || '',
+  supabaseServiceKey || supabaseAnonKey || '',
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
     },
   }
 );

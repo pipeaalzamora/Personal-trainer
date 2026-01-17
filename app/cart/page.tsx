@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from '@/hooks/useCart'
+import { saveTransactionData } from '@/lib/secure-storage'
 
 // Función simple de validación de email
 const validateEmail = (email: string): boolean => {
@@ -18,10 +19,7 @@ export default function CartPage() {
   const { toast } = useToast()
   const { cart, removeFromCart } = useCart()
   
-  // Calcular el precio total aquí
   const totalPrice = cart.reduce((sum, course) => sum + course.price, 0)
-  
-  // Verificar que el email sea válido y que haya al menos un curso en el carrito
   const isValid = validateEmail(email) && cart.length > 0
   
   const handleCheckout = async () => {
@@ -55,31 +53,27 @@ export default function CartPage() {
     setIsProcessing(true);
     
     try {
-      // 1. Preparar los datos para Transbank
+      // Generar identificadores únicos
       const buyOrder = `OC${Date.now()}${Math.floor(Math.random() * 10000)}`.substring(0, 26);
       const emailPrefix = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       const sessionId = `S${emailPrefix}${Date.now()}`.substring(0, 61);
       const returnUrl = `${window.location.origin}/payment/confirmation`;
       
-      // Guardar información del comprador
-      localStorage.setItem('tbk_email', email);
-      localStorage.setItem('tbk_cart', JSON.stringify(cart));
-      localStorage.setItem('tbk_buy_order', buyOrder);
-      localStorage.setItem('tbk_session_id', sessionId);
-      localStorage.setItem('tbk_amount', totalPrice.toString());
+      // Guardar datos de transacción en cookies seguras
+      saveTransactionData({
+        email,
+        buyOrder,
+        sessionId,
+        amount: totalPrice,
+      });
       
-      console.log('Iniciando transacción con Transbank:');
-      console.log('- URL de retorno:', returnUrl);
-      console.log('- Orden de compra:', buyOrder);
-      console.log('- ID de sesión:', sessionId);
-      console.log('- Monto:', totalPrice);
-      
-      // 2. Llamar a nuestra API proxy para crear la transacción
+      // Llamar a la API para crear la transacción
       const response = await fetch('/api/transbank/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Importante para enviar cookies
         body: JSON.stringify({
           buy_order: buyOrder,
           session_id: sessionId,
@@ -90,53 +84,39 @@ export default function CartPage() {
         })
       });
       
-      let errorMessage = 'Error al conectar con Transbank';
-      
       if (!response.ok) {
-        try {
-          const errorData = await response.json();
-          console.error('Error de Transbank:', errorData);
-          
-          // Mostrar información más detallada sobre el error
-          if (response.status === 422) {
-            errorMessage = 'Error 422: Datos inválidos para Transbank. ';
-            if (errorData.details) {
-              try {
-                const detailsObj = typeof errorData.details === 'string' 
-                  ? JSON.parse(errorData.details) 
-                  : errorData.details;
-                errorMessage += `Detalle: ${detailsObj.error_message || JSON.stringify(detailsObj)}`;
-              } catch (e) {
-                errorMessage += `Detalle: ${errorData.details}`;
-              }
-            }
-          } else {
-            errorMessage = `Error al crear transacción en Transbank: ${response.status} ${response.statusText}`;
-            if (errorData.error) {
-              errorMessage += `. ${errorData.error}`;
-            }
+        const errorData = await response.json().catch(() => ({}));
+        let errorMessage = 'Error al conectar con Transbank';
+        
+        if (response.status === 422) {
+          errorMessage = 'Error 422: Datos inválidos para Transbank.';
+          if (errorData.details) {
+            errorMessage += ` ${errorData.details}`;
           }
-        } catch (parseError) {
-          console.error('Error al parsear la respuesta:', parseError);
-          errorMessage = `Error al procesar la respuesta: ${response.status} ${response.statusText}`;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
         }
         
         throw new Error(errorMessage);
       }
       
       const data = await response.json();
-      console.log('Respuesta de Transbank:', data);
       
-      // Guardar token en localStorage
-      localStorage.setItem('tbk_token', data.token);
+      // Actualizar token en cookies
+      saveTransactionData({
+        email,
+        buyOrder,
+        sessionId,
+        amount: totalPrice,
+        token: data.token,
+      });
       
-      // Actualizar el estado de la transacción a "IN_PROCESS"
+      // Actualizar estado de la transacción
       try {
-        const statusResponse = await fetch('/api/transbank/update-status', {
+        await fetch('/api/transbank/update-status', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             buyOrder,
             token: data.token,
@@ -144,26 +124,17 @@ export default function CartPage() {
             additionalData: {
               redirectUrl: data.url,
               timestamp: new Date().toISOString(),
-              device: navigator.userAgent
             }
           })
         });
-        
-        if (statusResponse.ok) {
-          console.log('Estado de transacción actualizado a IN_PROCESS');
-        } else {
-          console.error('Error al actualizar estado de transacción:', await statusResponse.text());
-        }
       } catch (statusError) {
-        console.error('Error al actualizar estado de transacción:', statusError);
-        // No interrumpimos el flujo principal si falla la actualización
+        console.error('Error al actualizar estado:', statusError);
       }
       
-      // Pequeña pausa para asegurar que la actualización se complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Pequeña pausa antes de redirigir
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Redirigir al formulario de pago de Transbank
-      // Usar un formulario temporal para evitar bloqueos por redirección
+      // Redirigir a Transbank usando formulario
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = data.url;
@@ -223,6 +194,7 @@ export default function CartPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="mt-4"
+            autoComplete="email"
           />
           <Button 
             onClick={handleCheckout}

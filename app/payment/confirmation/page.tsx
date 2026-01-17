@@ -7,9 +7,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
-import { getCoursesExcelFiles } from "@/lib/supabase-api";
+import { getTransactionData, clearTransactionData, getCartData } from "@/lib/secure-storage";
 
-// Definir la estructura de la respuesta de Transbank
 interface TransactionResponse {
   vci: string;
   amount: number;
@@ -27,7 +26,6 @@ interface TransactionResponse {
   installments_number?: number;
 }
 
-// Página principal de confirmación
 export default function ConfirmationPage() {
   return (
     <div className="container mx-auto py-10">
@@ -38,7 +36,6 @@ export default function ConfirmationPage() {
   );
 }
 
-// Componente de carga
 function PaymentLoading() {
   return (
     <div className="flex flex-col items-center justify-center py-10">
@@ -57,11 +54,9 @@ function ConfirmationContent() {
   const { toast } = useToast();
   const { clearCart } = useCart();
   
-  // Referencia para evitar procesamiento múltiple
   const processingCompleteRef = useRef(false);
   
   useEffect(() => {
-    // Evitar que se ejecute varias veces
     if (processingCompleteRef.current) {
       return;
     }
@@ -77,76 +72,73 @@ function ConfirmationContent() {
     
     async function confirmPayment() {
       try {
-        // Marcar como en proceso para evitar múltiples ejecuciones
         processingCompleteRef.current = true;
         
-        console.log('Confirmando transacción con token:', token);
-        
-        // Usar nuestro endpoint de API para confirmar la transacción
         const response = await fetch('/api/transbank/commit', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include',
           body: JSON.stringify({ token }),
         });
         
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Error al confirmar la transacción:', errorText);
-          throw new Error(`Error al confirmar la transacción: ${response.status} ${response.statusText}`);
+          throw new Error(`Error al confirmar la transacción: ${response.status}`);
         }
         
         const data: TransactionResponse = await response.json();
-        console.log('Respuesta de confirmación:', data);
         setTransactionData(data);
         
         if (data.response_code === 0) {
-          // Pago exitoso
           setStatus('success');
           setStatusMessage('¡Pago realizado con éxito!');
           
-          // Limpiar el carrito
+          // Limpiar carrito y datos de transacción
           clearCart();
+        } else if (data.response_code === -1) {
+          setStatus('error');
+          setStatusMessage('La transacción fue cancelada o rechazada. Puedes intentar nuevamente.');
           
-          // Guardar información de la transacción en localStorage para mostrarla en "Mis Cursos"
-          const cartData = localStorage.getItem('tbk_cart');
-          if (cartData) {
-            const cart = JSON.parse(cartData);
-            const email = localStorage.getItem('tbk_email') || '';
-            
-            const coursePurchases = cart.map((course: any) => ({
+          toast({
+            title: "Pago cancelado",
+            description: "La transacción fue cancelada. Puedes volver a intentarlo.",
+            variant: "destructive",
+          });
+          return;
+          
+          // Guardar información de compra para "Mis Cursos"
+          const cartData = getCartData();
+          const txData = getTransactionData();
+          
+          if (cartData.length > 0) {
+            const coursePurchases = cartData.map((course: any) => ({
               courseId: course.id,
               courseTitle: course.title,
               purchaseDate: new Date().toISOString(),
               amount: course.price,
               transactionId: data.buy_order,
-              email: email
+              email: txData.email || ''
             }));
             
-            // Obtener compras previas o inicializar un array vacío
+            // Guardar en localStorage (esto es seguro, no es sensible)
             const previousPurchases = JSON.parse(localStorage.getItem('user_courses') || '[]');
             const updatedPurchases = [...previousPurchases, ...coursePurchases];
             localStorage.setItem('user_courses', JSON.stringify(updatedPurchases));
           }
           
-          // Mostrar toast de éxito
+          // Limpiar datos de transacción de las cookies
+          clearTransactionData();
+          
           toast({
             title: "Pago exitoso",
-            description: `Tu compra por $${data.amount} ha sido procesada correctamente.`,
+            description: `Tu compra por $${data.amount.toLocaleString()} ha sido procesada correctamente.`,
           });
-          
-          // Limpiar datos temporales de Transbank
-          localStorage.removeItem('tbk_cart');
-          localStorage.removeItem('tbk_email');
-          localStorage.removeItem('tbk_buy_order');
-          localStorage.removeItem('tbk_session_id');
-          localStorage.removeItem('tbk_amount');
-          localStorage.removeItem('tbk_token');
         } else {
-          // Pago fallido
           setStatus('error');
-          setStatusMessage(`Error en el pago: ${data.response_code}`);
+          setStatusMessage(`Error en el pago: código ${data.response_code}`);
           
           toast({
             title: "Error en el pago",
@@ -220,16 +212,12 @@ function ConfirmationContent() {
       </CardContent>
       
       <CardFooter className="flex flex-col gap-2">
-        {status === 'success' ? (
+        {status !== 'loading' && (
           <Button onClick={handleReturnToHome} className="w-full">
             Volver al inicio
           </Button>
-        ) : status === 'error' ? (
-          <Button onClick={handleReturnToHome} className="w-full">
-            Volver al inicio
-          </Button>
-        ) : null}
+        )}
       </CardFooter>
     </Card>
   );
-} 
+}

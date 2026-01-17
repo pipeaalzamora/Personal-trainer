@@ -14,7 +14,7 @@ export default function TrainerProfile() {
             ¿Quieres entrenar conmigo de forma personalizada?
           </h2>
           <p className="text-lg md:text-xl mb-4">
-            Además de los cursos, también realizo entrenamientos personalizados presenciales.
+            Además de los programas, también realizo entrenamientos personalizados presenciales.
           </p>
           <Link
             href="https://wa.me/56977978469"

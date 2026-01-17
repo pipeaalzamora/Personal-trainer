@@ -21,7 +21,7 @@ export default function AddToCartButton({ course }: { course: Course }) {
     
     if (isCourseInCart) {
       toast({
-        title: "Curso ya en el carrito",
+        title: "Programa ya en el carrito",
         description: `${course.title} ya está en tu carrito.`,
       });
       setIsProcessing(false)
@@ -35,7 +35,7 @@ export default function AddToCartButton({ course }: { course: Course }) {
       // Añadir el curso al carrito es suficiente, no necesitamos llamar a Transbank aquí
       setIsAdded(true)
       toast({
-        title: "Curso añadido al carrito",
+        title: "Programa añadido al carrito",
         description: `${course.title} ha sido añadido a tu carrito.`,
       })
       

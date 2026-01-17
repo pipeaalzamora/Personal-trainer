@@ -11,16 +11,14 @@ import { Loader2 } from 'lucide-react'
 const MALE_CATEGORIES = [
   'Ganancia Muscular',
   'Pérdida de Grasa Corporal', 
-  'Ganancia de Fuerza',
-  'Powerlifting'
+  'Ganancia de Fuerza'
 ];
 
 // Categorías para mujeres
 const FEMALE_CATEGORIES = [
   'Ganancia Muscular Mujeres',
   'Pérdida de Grasa Corporal Mujeres',
-  'Ganancia de Fuerza',
-  'Powerlifting'
+  'Ganancia de Fuerza'
 ];
 
 export default function Home() {
@@ -55,7 +53,7 @@ export default function Home() {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 text-red-500 animate-spin mb-4" />
-        <p className="text-white text-lg">Cargando cursos...</p>
+        <p className="text-white text-lg">Cargando programas...</p>
       </div>
     );
   }
@@ -64,7 +62,7 @@ export default function Home() {
   if (error) {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
-        <p className="text-red-500 text-lg mb-4">Error al cargar los cursos</p>
+        <p className="text-red-500 text-lg mb-4">Error al cargar los programas</p>
         <p className="text-white">{error}</p>
       </div>
     );

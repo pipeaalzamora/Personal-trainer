@@ -44,7 +44,7 @@ export default function MyCourses() {
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold mb-8 text-white">Cargando tus cursos...</h2>
+        <h2 className="text-2xl font-bold mb-8 text-white">Cargando tus programas...</h2>
       </div>
     );
   }
@@ -52,12 +52,12 @@ export default function MyCourses() {
   if (purchasedCourses.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h2 className="text-2xl font-bold mb-8 text-white">Mis Cursos</h2>
+        <h2 className="text-2xl font-bold mb-8 text-white">Mis Programas</h2>
         <Card className="max-w-xl mx-auto">
           <CardContent className="pt-6">
-            <p className="text-center py-8">Aún no has comprado ningún curso.</p>
+            <p className="text-center py-8">Aún no has comprado ningún programa.</p>
             <Link href="/">
-              <Button className="w-full">Explorar Cursos</Button>
+              <Button className="w-full">Explorar Programas</Button>
             </Link>
           </CardContent>
         </Card>
@@ -67,7 +67,7 @@ export default function MyCourses() {
   
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-2xl font-bold mb-8 text-white">Mis Cursos</h2>
+      <h2 className="text-2xl font-bold mb-8 text-white">Mis Programas</h2>
       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {purchasedCourses.map((course) => (
@@ -88,7 +88,7 @@ export default function MyCourses() {
               <p className="text-sm">Duración: {course.duration}</p>
               </CardContent>
             <CardFooter>
-              <Button className="w-full">Acceder al Curso</Button>
+              <Button className="w-full">Acceder al Programa</Button>
               </CardFooter>
             </Card>
           ))}

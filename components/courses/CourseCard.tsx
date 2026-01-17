@@ -33,7 +33,7 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
     const category = course.category?.toLowerCase() || "";
     
     // Categorías que siempre muestran "PRÓXIMAMENTE"
-    return category.includes("powerlifting") || category.includes("ganancia de fuerza");
+    return category.includes("ganancia de fuerza");
   };
 
   return (

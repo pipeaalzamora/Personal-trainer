@@ -39,7 +39,7 @@ export default function CoursePage({ params }: { params: { id: string } }) {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="h-12 w-12 text-red-500 animate-spin mb-4" />
-        <p className="text-white text-lg">Cargando curso...</p>
+        <p className="text-white text-lg">Cargando programa...</p>
       </div>
     );
   }
@@ -49,8 +49,8 @@ export default function CoursePage({ params }: { params: { id: string } }) {
     return (
       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[60vh]">
         <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold text-white mb-2">Curso no encontrado</h1>
-        <p className="text-gray-300 mb-6">El curso que buscas no existe o ha sido eliminado.</p>
+        <h1 className="text-2xl font-bold text-white mb-2">Programa no encontrado</h1>
+        <p className="text-gray-300 mb-6">El programa que buscas no existe o ha sido eliminado.</p>
         <Link href="/">
           <Button className="bg-red-600 hover:bg-red-700">
             Volver al inicio
@@ -87,6 +87,33 @@ export default function CoursePage({ params }: { params: { id: string } }) {
         </CardHeader>
         <CardContent>
           <p className="mb-4 whitespace-pre-line">{course.description}</p>
+          
+          {/* Sección: ¿Qué incluye este programa? */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-lg font-bold mb-3 text-gray-800">¿Qué incluye este programa?</h3>
+            <p className="text-gray-700 mb-3">
+              Archivo descargable en formato Excel, diseñado para guiarte paso a paso en tu proceso de entrenamiento.
+            </p>
+            <ul className="space-y-2 text-gray-700">
+              <li className="flex items-start">
+                <span className="font-semibold mr-2">Hoja 1:</span>
+                <span>Introducción con el objetivo del programa e instrucciones claras para su uso.</span>
+              </li>
+              <li className="flex items-start">
+                <span className="font-semibold mr-2">Hoja 2:</span>
+                <span>Glosario + Indicaciones donde se explican los términos, siglas y métodos del programa, junto con las recomendaciones generales.</span>
+              </li>
+              <li className="flex items-start">
+                <span className="font-semibold mr-2">Hoja 3:</span>
+                <span>Ejercicios con video que incluye el nombre de cada ejercicio y su respectivo enlace a YouTube para ver la ejecución correcta.</span>
+              </li>
+              <li className="flex items-start">
+                <span className="font-semibold mr-2">Hoja 4:</span>
+                <span>Plan de entrenamiento completo, organizado por días, con ejercicios detallados, series, repeticiones, tiempos de descanso y métodos específicos.</span>
+              </li>
+            </ul>
+          </div>
+
           <p className="font-semibold text-xl mb-2">
             Precio: CLP ${course.price.toLocaleString("es-CL")}
           </p>

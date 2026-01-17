@@ -6,7 +6,7 @@ import { saveCartData, getCartData, clearCartData } from '@/lib/secure-storage';
 interface CartContextType {
   cart: Course[];
   addToCart: (course: Course) => boolean;
-  removeFromCart: (courseId: number) => void;
+  removeFromCart: (courseId: string | number) => void;
   clearCart: () => void;
   cartCount: number;
 }
@@ -43,8 +43,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
-  const removeFromCart = (courseId: number) => {
-    const updatedCart = cart.filter(course => Number(course.id) !== courseId);
+  const removeFromCart = (courseId: string | number) => {
+    const updatedCart = cart.filter(course => String(course.id) !== String(courseId));
     setCart(updatedCart);
   };
 

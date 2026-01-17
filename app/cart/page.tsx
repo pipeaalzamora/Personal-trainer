@@ -177,7 +177,7 @@ export default function CartPage() {
                   <Button 
                     variant="outline"
                     size="sm"
-                    onClick={() => removeFromCart(Number(course.id))}
+                    onClick={() => removeFromCart(course.id)}
                   >
                     Eliminar
                   </Button>

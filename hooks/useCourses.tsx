@@ -136,6 +136,16 @@ function getImageForCourse(title: string, category: string): { image: string; im
 }
 
 
+// Obtener el orden de prioridad para un curso basado en su título
+function getCourseOrder(title: string): number {
+  const lowerTitle = title.toLowerCase();
+  if (lowerTitle.includes('fase i:') || lowerTitle.includes('fase 1')) return 1;
+  if (lowerTitle.includes('fase ii:') || lowerTitle.includes('fase 2')) return 2;
+  if (lowerTitle.includes('fase iii:') || lowerTitle.includes('fase 3')) return 3;
+  if (lowerTitle.includes('pack completo')) return 4;
+  return 5; // Otros al final
+}
+
 interface CoursesContextType {
   courses: Course[];
   loading: boolean;
@@ -220,7 +230,9 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
   }, [courses]);
 
   const getCoursesByCategory = useCallback((category: string): Course[] => {
-    return courses.filter(course => course.category === category);
+    return courses
+      .filter(course => course.category === category)
+      .sort((a, b) => getCourseOrder(a.title) - getCourseOrder(b.title));
   }, [courses]);
 
   const getCategories = useCallback((isFemale: boolean): string[] => {

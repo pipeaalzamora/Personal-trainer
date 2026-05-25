@@ -15,8 +15,8 @@ export interface Database {
           title: string
           description: string
           price: number
-          image_url: string | null
           category: string | null
+          is_female: boolean | null
           created_at: string
           updated_at: string
         }
@@ -25,8 +25,8 @@ export interface Database {
           title: string
           description: string
           price: number
-          image_url?: string | null
           category?: string | null
+          is_female?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -35,8 +35,8 @@ export interface Database {
           title?: string
           description?: string
           price?: number
-          image_url?: string | null
           category?: string | null
+          is_female?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -50,7 +50,6 @@ export interface Database {
           path: string
           type: string
           size: number
-          description: string | null
           created_at: string
         }
         Insert: {
@@ -60,7 +59,6 @@ export interface Database {
           path: string
           type: string
           size: number
-          description?: string | null
           created_at?: string
         }
         Update: {
@@ -70,7 +68,6 @@ export interface Database {
           path?: string
           type?: string
           size?: number
-          description?: string | null
           created_at?: string
         }
         Relationships: [
@@ -93,7 +90,7 @@ export interface Database {
           session_id: string
           transaction_token: string | null
           transaction_response: Json | null
-          emails_sent: boolean
+          emails_sent: boolean | null
           emails_sent_at: string | null
           created_at: string
           updated_at: string | null
@@ -142,7 +139,7 @@ export interface Database {
           order_id: string
           course_id: string
           price: number
-          is_part_of_pack: boolean
+          is_part_of_pack: string | null
           created_at: string
         }
         Insert: {
@@ -150,7 +147,7 @@ export interface Database {
           order_id: string
           course_id: string
           price: number
-          is_part_of_pack?: boolean
+          is_part_of_pack?: string | null
           created_at?: string
         }
         Update: {
@@ -158,7 +155,7 @@ export interface Database {
           order_id?: string
           course_id?: string
           price?: number
-          is_part_of_pack?: boolean
+          is_part_of_pack?: string | null
           created_at?: string
         }
         Relationships: [

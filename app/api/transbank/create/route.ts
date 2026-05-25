@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { checkoutCreateSchema, sanitizeId, validateData } from '@/lib/validation';
 import { checkTransactionReplay, createSecureTransaction } from '@/lib/transaction-security';
 import { logSuspiciousActivity, logTransaction, logValidationError } from '@/lib/logger';
+import { isCoursePurchasable } from '@/lib/course-availability';
 
 export async function POST(request: NextRequest) {
   let sanitizedBuyOrder = '';
@@ -73,6 +74,18 @@ export async function POST(request: NextRequest) {
     }
 
     const orderedCourses = requestedCourseIds.map(courseId => coursesById.get(courseId)!);
+    const unavailableCourses = orderedCourses.filter(course => !isCoursePurchasable(course));
+    if (unavailableCourses.length > 0) {
+      logValidationError('Cursos no disponibles en checkout', request, {
+        unavailableCourseIds: unavailableCourses.map(course => course.id),
+        unavailableCourseTitles: unavailableCourses.map(course => course.title),
+      });
+      return NextResponse.json(
+        { error: 'Uno o más programas del carrito no están disponibles para compra.' },
+        { status: 409 }
+      );
+    }
+
     amountInteger = orderedCourses.reduce((sum, course) => sum + Math.round(Number(course.price || 0)), 0);
 
     if (amountInteger <= 0) {

@@ -24,8 +24,8 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://coach-inostroza.vercel.app'),
   title: 'Coach Inostroza - Programas de entrenamiento personalizados',
-  description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados. Ganancia muscular, pérdida de grasa, powerlifting y más.',
-  keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, powerlifting, fuerza, fitness, coach online, rutinas personalizadas, nutrición deportiva',
+  description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados. Ganancia muscular, pérdida de grasa y más.',
+  keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, fuerza, fitness, coach online, rutinas personalizadas, nutrición deportiva',
   authors: [{ name: 'Coach Inostroza' }],
   robots: 'index, follow',
   openGraph: {
@@ -117,4 +117,3 @@ export default function RootLayout({
     </html>
   )
 }
-

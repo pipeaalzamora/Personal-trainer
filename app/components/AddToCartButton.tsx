@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCart } from "@/hooks/useCart"
 import { useRouter } from 'next/navigation'
 import { getCourseUnavailableLabel } from '@/lib/course-availability'
+import { productFromCourse, trackMarketingEvent } from '@/lib/marketing/client'
 
 export default function AddToCartButton({ course }: { course: Course }) {
   const [isAdded, setIsAdded] = useState(false)
@@ -42,6 +43,10 @@ export default function AddToCartButton({ course }: { course: Course }) {
     
     // Agregar el curso al carrito
     addToCart(course)
+    trackMarketingEvent('AddToCart', {
+      value: course.price,
+      products: [productFromCourse(course)],
+    })
     
     try {
       // Añadir el curso al carrito es suficiente, no necesitamos llamar a Transbank aquí

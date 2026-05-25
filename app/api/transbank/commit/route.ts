@@ -4,6 +4,8 @@ import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory,
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase';
 import { setUserSessionCookie } from '@/lib/server-auth';
+import { sendPurchaseMarketingEvents } from '@/lib/marketing/server';
+import { MARKETING_CURRENCY, MarketingProduct } from '@/lib/marketing/types';
 
 // CORS manejado por middleware global - no necesitamos headers aquí
 
@@ -195,11 +197,25 @@ export async function POST(request: Request) {
       token
     );
 
+    let purchaseAnalytics: {
+      eventId: string;
+      value: number;
+      currency: string;
+      products: MarketingProduct[];
+    } | undefined;
+
     // Registrar en el historial de transacciones
     if (updatedOrder && updatedOrder.id) {
       // Obtener los items de la orden y los nombres de los cursos
       const orderItems = await getOrderItems(updatedOrder.id);
       const courseNames = orderItems.map(item => item.course?.title || 'Curso desconocido');
+      const products: MarketingProduct[] = orderItems.map(item => ({
+        id: item.course_id,
+        title: item.course?.title || `Curso ${item.course_id}`,
+        category: item.course?.category || 'Sin categoría',
+        price: item.price,
+        quantity: 1,
+      }));
 
       await addOrderTransactionHistory(
         updatedOrder.id,
@@ -211,6 +227,28 @@ export async function POST(request: Request) {
       const customerEmail = status === 'COMPLETED'
         ? await resolveOrderEmail(updatedOrder)
         : null;
+
+      if (status === 'COMPLETED' && !emailsAlreadySent) {
+        const eventId = `purchase_${updatedOrder.id}`;
+        const value = Number(data.amount || updatedOrder.total_amount || 0);
+
+        purchaseAnalytics = {
+          eventId,
+          value,
+          currency: MARKETING_CURRENCY,
+          products,
+        };
+
+        await sendPurchaseMarketingEvents({
+          request,
+          eventId,
+          email: customerEmail,
+          userId: updatedOrder.user_id,
+          buyOrder: data.buy_order,
+          amount: value,
+          products,
+        });
+      }
 
       if (status === 'COMPLETED' && !emailsAlreadySent) {
         try {
@@ -231,7 +269,6 @@ export async function POST(request: Request) {
             }
 
             // Obtener los items y títulos de cursos
-            const orderItems = await getOrderItems(updatedOrder.id);
             const courseIds = orderItems.map(item => item.course_id);
             const courseTitles = orderItems.map(item =>
               item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
@@ -307,7 +344,11 @@ export async function POST(request: Request) {
       }
     }
 
-    const jsonResponse = NextResponse.json(data);
+    const responsePayload = purchaseAnalytics
+      ? { ...data, marketing: purchaseAnalytics }
+      : data;
+
+    const jsonResponse = NextResponse.json(responsePayload);
     if (status === 'COMPLETED') {
       const refreshedOrder = await getOrderByBuyOrder(data.buy_order);
       const email = refreshedOrder ? await resolveOrderEmail(refreshedOrder) : null;

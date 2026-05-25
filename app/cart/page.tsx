@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from '@/hooks/useCart'
 import { saveTransactionData } from '@/lib/secure-storage'
+import { productFromCourse, trackMarketingEvent } from '@/lib/marketing/client'
 
 // Función simple de validación de email
 const validateEmail = (email: string): boolean => {
@@ -58,6 +59,11 @@ export default function CartPage() {
       const emailPrefix = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       const sessionId = `S${emailPrefix}${Date.now()}`.substring(0, 61);
       const returnUrl = `${window.location.origin}/payment/confirmation`;
+
+      trackMarketingEvent('InitiateCheckout', {
+        value: totalPrice,
+        products: cart.map(productFromCourse),
+      });
       
       // Guardar datos de transacción en cookies seguras
       saveTransactionData({

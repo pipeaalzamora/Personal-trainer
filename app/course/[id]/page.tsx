@@ -9,12 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCourses, Course } from "@/hooks/useCourses";
 import { Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useParams } from "next/navigation";
+import { productFromCourse, trackMarketingEvent } from "@/lib/marketing/client";
 
 export default function CoursePage() {
   const params = useParams<{ id: string }>();
@@ -22,6 +23,7 @@ export default function CoursePage() {
   const [isFemale, setIsFemale] = useState<boolean>(false);
   const [course, setCourse] = useState<Course | undefined>(undefined);
   const [searchComplete, setSearchComplete] = useState(false);
+  const trackedCourseId = useRef<string | null>(null);
 
   useEffect(() => {
     const storedGender = localStorage.getItem("selectedGender");
@@ -35,6 +37,16 @@ export default function CoursePage() {
       setSearchComplete(true);
     }
   }, [loading, courses, params.id, getCourseById]);
+
+  useEffect(() => {
+    if (!course || trackedCourseId.current === course.id) return;
+
+    trackedCourseId.current = course.id;
+    trackMarketingEvent('ViewContent', {
+      value: course.price,
+      products: [productFromCourse(course)],
+    });
+  }, [course]);
 
   // Loading state
   if (loading || !searchComplete) {

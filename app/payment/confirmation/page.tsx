@@ -8,6 +8,8 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/hooks/useCart";
 import { clearTransactionData } from "@/lib/secure-storage";
+import { trackMarketingEvent } from "@/lib/marketing/client";
+import type { MarketingProduct } from "@/lib/marketing/types";
 
 interface TransactionResponse {
   vci: string;
@@ -24,6 +26,12 @@ interface TransactionResponse {
   payment_type_code: string;
   response_code: number;
   installments_number?: number;
+  marketing?: {
+    eventId: string;
+    value: number;
+    currency: string;
+    products: MarketingProduct[];
+  };
 }
 
 export default function ConfirmationPage() {
@@ -95,6 +103,15 @@ function ConfirmationContent() {
         if (data.response_code === 0) {
           setStatus('success');
           setStatusMessage('¡Pago realizado con éxito!');
+
+          if (data.marketing?.eventId) {
+            trackMarketingEvent('Purchase', {
+              eventId: data.marketing.eventId,
+              value: data.marketing.value,
+              currency: data.marketing.currency,
+              products: data.marketing.products,
+            });
+          }
 
           // Limpiar carrito y datos de transacción
           clearCart();

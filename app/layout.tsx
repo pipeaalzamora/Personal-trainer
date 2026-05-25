@@ -11,6 +11,7 @@ import Image from 'next/image';
 import logo from '@/public/logo.png';
 import { Toaster } from "@/components/ui/toaster"
 import { Suspense } from 'react';
+import MarketingTracking from '@/components/marketing/MarketingTracking';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://coach-inostroza.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.coachinostroza.cl'),
   title: 'Coach Inostroza - Programas de entrenamiento personalizados',
   description: 'Transforma tu cuerpo con nuestros programas de entrenamiento personalizados. Ganancia muscular, pérdida de grasa y más.',
   keywords: 'entrenamiento personal, ganancia muscular, pérdida de grasa, fuerza, fitness, coach online, rutinas personalizadas, nutrición deportiva',
@@ -112,6 +113,7 @@ export default function RootLayout({
           <Footer/>
         </CartProvider>
         </CoursesProvider>
+        <MarketingTracking />
         <Toaster />
       </body>
     </html>

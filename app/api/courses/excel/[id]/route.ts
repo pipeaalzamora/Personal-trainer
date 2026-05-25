@@ -13,6 +13,7 @@ export async function GET(
 
     const searchParams = req.nextUrl.searchParams;
     const fileIndex = searchParams.get('fileIndex');
+    const metadataOnly = searchParams.get('metadata') === '1' || searchParams.get('metadata') === 'true';
 
     // Obtener el archivo Excel del curso
     const result = await getCourseExcelFile(id);
@@ -27,7 +28,7 @@ export async function GET(
     // Si es un pack completo
     if (result.isPackComplete && result.packFiles) {
       // Si no se especifica un índice, devolver la lista de archivos disponibles
-      if (!fileIndex) {
+      if (!fileIndex || metadataOnly) {
         return NextResponse.json({
           isPackComplete: true,
           files: result.packFiles.map((file, index) => ({
@@ -58,6 +59,17 @@ export async function GET(
 
     // Si no es un pack completo, enviar el archivo individual
     if (result.data && result.filename && result.contentType) {
+      if (metadataOnly) {
+        return NextResponse.json({
+          isPackComplete: false,
+          files: [{
+            index: 0,
+            filename: result.filename,
+            downloadUrl: `/api/courses/excel/${id}`
+          }]
+        });
+      }
+
       const response = new NextResponse(result.data);
       response.headers.set('Content-Type', result.contentType);
       response.headers.set('Content-Disposition', `attachment; filename="${result.filename}"`);

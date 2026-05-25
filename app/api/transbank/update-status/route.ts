@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { 
-  updateOrderTransaction, 
-  getOrderByBuyOrder, 
-  addOrderTransactionHistory, 
-  getOrderItems 
+import {
+  updateOrderTransaction,
+  getOrderByBuyOrder,
+  addOrderTransactionHistory,
+  getOrderItems
 } from '@/lib/supabase-api';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS
 const corsHeaders = {
@@ -22,6 +23,9 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     const { buyOrder, token, status, additionalData } = await request.json();
 
     if (!buyOrder || !status) {
@@ -30,7 +34,7 @@ export async function POST(request: Request) {
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // Primero obtener la orden actual
     const existingOrder = await getOrderByBuyOrder(buyOrder);
     if (!existingOrder) {
@@ -39,7 +43,7 @@ export async function POST(request: Request) {
         { status: 404, headers: corsHeaders }
       );
     }
-    
+
     // Actualizar la orden en Supabase
     const updatedOrder = await updateOrderTransaction(
       buyOrder,
@@ -47,7 +51,7 @@ export async function POST(request: Request) {
       additionalData || {},
       token || ''
     );
-    
+
     // Registrar en el historial de transacciones
     try {
       const orderItems = await getOrderItems(updatedOrder.id);
@@ -67,8 +71,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         order: {
           id: updatedOrder.id,
           status: updatedOrder.status,
@@ -84,4 +88,4 @@ export async function POST(request: Request) {
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

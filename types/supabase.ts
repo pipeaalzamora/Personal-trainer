@@ -40,6 +40,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       files: {
         Row: {
@@ -49,6 +50,7 @@ export interface Database {
           path: string
           type: string
           size: number
+          description: string | null
           created_at: string
         }
         Insert: {
@@ -58,6 +60,7 @@ export interface Database {
           path: string
           type: string
           size: number
+          description?: string | null
           created_at?: string
         }
         Update: {
@@ -67,8 +70,18 @@ export interface Database {
           path?: string
           type?: string
           size?: number
+          description?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "files_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       orders: {
         Row: {
@@ -113,6 +126,15 @@ export interface Database {
           created_at?: string
           updated_at?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       order_items: {
         Row: {
@@ -139,6 +161,54 @@ export interface Database {
           is_part_of_pack?: boolean
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      order_transaction_history: {
+        Row: {
+          id: string
+          order_id: string
+          status: string
+          data: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          status: string
+          data?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          status?: string
+          data?: Json | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_transaction_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       users: {
         Row: {
@@ -162,6 +232,7 @@ export interface Database {
           verification_token?: string | null
           created_at?: string
         }
+        Relationships: []
       }
     }
     Views: {
@@ -174,4 +245,4 @@ export interface Database {
       [_ in never]: never
     }
   }
-} 
+}

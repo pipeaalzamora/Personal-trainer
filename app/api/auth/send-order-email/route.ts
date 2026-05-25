@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -18,26 +19,29 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener datos de la solicitud
-    const { 
-      email, 
+    const {
+      email,
       orderId,
-      buyOrder, 
-      courseTitles, 
+      buyOrder,
+      courseTitles,
       totalAmount,
       attachments
     } = await request.json();
-    
+
     if (!email || !orderId || !buyOrder || !courseTitles || !totalAmount) {
       return NextResponse.json(
-        { 
-          error: 'Faltan datos requeridos', 
-          requiredFields: ['email', 'orderId', 'buyOrder', 'courseTitles', 'totalAmount'] 
+        {
+          error: 'Faltan datos requeridos',
+          requiredFields: ['email', 'orderId', 'buyOrder', 'courseTitles', 'totalAmount']
         },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // Convertir los attachments de base64 a Buffer si existen
     let processedAttachments;
     if (attachments && Array.isArray(attachments)) {
@@ -45,19 +49,19 @@ export async function POST(request: Request) {
         processedAttachments = attachments.map(attachment => {
           // Si el contenido ya está en formato Buffer, usarlo directamente
           let content = attachment.content;
-          
+
           // Si es una cadena base64, convertirla a Buffer
           if (typeof attachment.content === 'string') {
             content = Buffer.from(attachment.content, 'base64');
           }
-          
+
           return {
             filename: attachment.filename,
             content,
             contentType: attachment.contentType
           };
         });
-        
+
         console.log(`Preparados ${processedAttachments.length} archivos adjuntos para enviar por email`);
       } catch (attachError) {
         console.error('Error al procesar archivos adjuntos:', attachError);
@@ -65,7 +69,7 @@ export async function POST(request: Request) {
         processedAttachments = undefined;
       }
     }
-    
+
     // Enviar email de confirmación
     const emailSent = await sendOrderConfirmationEmail(
       email,
@@ -77,7 +81,7 @@ export async function POST(request: Request) {
         attachments: processedAttachments
       }
     );
-    
+
     if (!emailSent) {
       console.error('Error al enviar email de confirmación');
       return NextResponse.json(
@@ -85,24 +89,24 @@ export async function POST(request: Request) {
         { status: 500, headers: corsHeaders }
       );
     }
-    
+
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         message: 'Email de confirmación enviado correctamente',
         withAttachments: !!processedAttachments
       },
       { headers: corsHeaders }
     );
-    
+
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

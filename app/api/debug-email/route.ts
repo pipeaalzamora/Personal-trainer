@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import { sendPaymentReceiptEmail } from '@/lib/email';
 import { Resend } from 'resend';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 export async function GET(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener el email de la query string
     const url = new URL(request.url);
     const email = url.searchParams.get('email') || 'test@example.com';
     const action = url.searchParams.get('action') || 'info';
-    
+
     // Información de configuración
     const config = {
       resendApiKey: process.env.RESEND_API_KEY ? '✅ Configurada' : '❌ No configurada',
@@ -16,12 +20,12 @@ export async function GET(request: Request) {
       nodeEnv: process.env.NODE_ENV,
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL
     };
-    
+
     // Si la acción es enviar, enviar un correo de prueba
     if (action === 'send') {
       try {
         const resend = new Resend(process.env.RESEND_API_KEY);
-        
+
         // 1. Envío directo con Resend
         const { data: directData, error: directError } = await resend.emails.send({
           from: 'onboarding@resend.dev',
@@ -29,7 +33,7 @@ export async function GET(request: Request) {
           subject: 'Prueba directa de Resend',
           html: '<strong>Esto es una prueba directa de Resend</strong>'
         });
-        
+
         // 2. Envío a través de nuestra función helper
         const helperResult = await sendPaymentReceiptEmail(
           email,
@@ -41,7 +45,7 @@ export async function GET(request: Request) {
             authCode: "DEBUG-987"
           }
         );
-        
+
         return NextResponse.json({
           status: 'success',
           config,
@@ -79,4 +83,4 @@ export async function GET(request: Request) {
       error: error instanceof Error ? error.message : 'Error desconocido'
     }, { status: 500 });
   }
-} 
+}

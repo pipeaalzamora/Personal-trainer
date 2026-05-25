@@ -65,11 +65,9 @@ export default function CoursePage({ params }: { params: { id: string } }) {
   // Obtener la imagen correcta según el género
   const getCorrectImage = () => {
     if (isFemale && course.imageFemale) {
-      return typeof course.imageFemale === "string"
-        ? course.imageFemale
-        : course.imageFemale.src;
+      return course.imageFemale;
     }
-    return typeof course.image === "string" ? course.image : course.image.src;
+    return course.image;
   };
 
   return (

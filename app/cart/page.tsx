@@ -111,26 +111,6 @@ export default function CartPage() {
         token: data.token,
       });
       
-      // Actualizar estado de la transacción
-      try {
-        await fetch('/api/transbank/update-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            buyOrder,
-            token: data.token,
-            status: 'IN_PROCESS',
-            additionalData: {
-              redirectUrl: data.url,
-              timestamp: new Date().toISOString(),
-            }
-          })
-        });
-      } catch (statusError) {
-        console.error('Error al actualizar estado:', statusError);
-      }
-      
       // Pequeña pausa antes de redirigir
       await new Promise(resolve => setTimeout(resolve, 300));
       

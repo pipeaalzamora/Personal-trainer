@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -18,21 +19,24 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener el token de la solicitud
     const { token } = await request.json();
-    
+
     if (!token) {
       return NextResponse.json(
         { error: 'Token no proporcionado' },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     console.log('Consultando estado de transacción con token:', token);
-    
+
     // Consultar el estado de la transacción con Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
-    
+
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -40,16 +44,16 @@ export async function POST(request: Request) {
         'Tbk-Api-Key-Secret': config.apiKey
       }
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Error al consultar la transacción:', errorText);
       throw new Error(`Error al consultar la transacción: ${response.status} ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     console.log('Respuesta de consulta de estado:', data);
-    
+
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
     console.error('Error en API route:', error);
@@ -58,4 +62,4 @@ export async function POST(request: Request) {
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

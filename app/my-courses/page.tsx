@@ -1,46 +1,61 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Course } from '@/hooks/useCourses'
 import Image from 'next/image'
 import Link from 'next/link'
 
+type PurchasedCourse = {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  image_url?: string | null;
+}
+
+function fallbackImage(course: PurchasedCourse): string {
+  const category = (course.category || '').toLowerCase();
+  if (category.includes('pérdida') || category.includes('perdida')) return '/perdida1.jpg';
+  if (category.includes('fuerza')) return '/fuerza1.jpeg';
+  if (category.includes('powerlifting')) return '/power1.jpg';
+  return '/ganancia1.jpg';
+}
+
 export default function MyCourses() {
-  const [purchasedCourses, setPurchasedCourses] = useState<Course[]>([]);
+  const [purchasedCourses, setPurchasedCourses] = useState<PurchasedCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // En un caso real, esto vendría de tu API después de autenticación
-    // Por ahora simularemos esto con localStorage
-    const loadPurchases = () => {
+    const loadPurchases = async () => {
       try {
-        // Simular carga de cursos comprados
-        // En producción, esto sería una llamada a tu API
-        const purchases = localStorage.getItem('tbk_purchases');
-        
-        if (purchases) {
-          setPurchasedCourses(JSON.parse(purchases));
-        } else {
-          // Para demostración, mostraremos el último carrito comprado
-          const lastCart = localStorage.getItem('tbk_cart');
-          if (lastCart) {
-            setPurchasedCourses(JSON.parse(lastCart));
-            // Guardarlo como compras para futura referencia
-            localStorage.setItem('tbk_purchases', lastCart);
-          }
+        const response = await fetch('/api/my-courses', {
+          credentials: 'include',
+        });
+
+        if (response.status === 401) {
+          setPurchasedCourses([]);
+          return;
         }
-      } catch (error) {
-        console.error('Error al cargar los cursos:', error);
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'No se pudieron cargar tus programas');
+        }
+
+        const data = await response.json();
+        setPurchasedCourses(Array.isArray(data) ? data : []);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Error al cargar tus programas');
       } finally {
         setLoading(false);
       }
     };
-    
+
     loadPurchases();
   }, []);
-  
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -48,14 +63,16 @@ export default function MyCourses() {
       </div>
     );
   }
-  
+
   if (purchasedCourses.length === 0) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
         <h2 className="text-2xl font-bold mb-8 text-white">Mis Programas</h2>
         <Card className="max-w-xl mx-auto">
           <CardContent className="pt-6">
-            <p className="text-center py-8">Aún no has comprado ningún programa.</p>
+            <p className="text-center py-8">
+              {error || 'Aún no tienes programas asociados a esta sesión.'}
+            </p>
             <Link href="/">
               <Button className="w-full">Explorar Programas</Button>
             </Link>
@@ -64,35 +81,37 @@ export default function MyCourses() {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-8 text-white">Mis Programas</h2>
-      
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {purchasedCourses.map((course) => (
           <Card key={course.id} className="bg-gradient-to-b from-red-500 to-black">
             <CardHeader>
               <div className="relative w-full aspect-video mb-4">
-                  <Image
-                  src={typeof course.image === 'string' ? course.image : course.image.src}
-                    alt={course.title}
-                    fill
+                <Image
+                  src={course.image_url || fallbackImage(course)}
+                  alt={course.title}
+                  fill
                   className="object-cover rounded-md"
                 />
               </div>
               <CardTitle className="text-white">{course.title}</CardTitle>
-              </CardHeader>
+            </CardHeader>
             <CardContent className="text-gray-200">
               <p className="mb-2 line-clamp-2">{course.description}</p>
-              <p className="text-sm">Duración: {course.duration}</p>
-              </CardContent>
+              {course.category && <p className="text-sm">{course.category}</p>}
+            </CardContent>
             <CardFooter>
-              <Button className="w-full">Acceder al Programa</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+              <Link href={`/my-courses/${course.id}`} className="w-full">
+                <Button className="w-full">Acceder al Programa</Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
     </div>
   );
-} 
+}

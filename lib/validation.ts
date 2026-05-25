@@ -20,7 +20,7 @@ export const phoneSchema = z.string().trim()
   });
 
 export const passwordSchema = z.string().min(8).max(100)
-  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 
+  .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
     'Contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial');
 
 export const urlSchema = z.string().url('URL inválida').max(2048)
@@ -76,6 +76,19 @@ export const cartItemSchema = z.object({
 
 export const cartSchema = z.array(cartItemSchema);
 
+export const checkoutCartItemSchema = z.object({
+  id: idSchema,
+});
+
+export const checkoutCreateSchema = z.object({
+  buy_order: idSchema,
+  session_id: idSchema,
+  return_url: urlSchema,
+  email: emailSchema,
+  cart: z.array(checkoutCartItemSchema).min(1).max(20),
+  amount: z.number().optional(),
+});
+
 // Función para validar datos con mensajes de error claros
 export function validateData<T>(data: unknown, schema: z.ZodType<T>): T {
   try {
@@ -83,10 +96,10 @@ export function validateData<T>(data: unknown, schema: z.ZodType<T>): T {
   } catch (error) {
     if (error instanceof z.ZodError) {
       // Formatea los errores de manera más legible
-      const errorMessage = error.errors.map(err => 
+      const errorMessage = error.errors.map(err =>
         `${err.path.join('.')}: ${err.message}`
       ).join('; ');
-      
+
       throw new Error(`Error de validación: ${errorMessage}`);
     }
     throw error;
@@ -96,7 +109,7 @@ export function validateData<T>(data: unknown, schema: z.ZodType<T>): T {
 // Función mejorada para sanitizar textos contra XSS
 export function sanitizeText(text: string): string {
   if (!text) return '';
-  
+
   return text
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -113,7 +126,7 @@ export function sanitizeText(text: string): string {
 // Función para limpiar parámetros de consulta SQL para prevenir inyección
 export function sanitizeSqlParam(param: string): string {
   if (!param) return '';
-  
+
   // Elimina caracteres que podrían usarse para inyección SQL
   return param
     .replace(/'/g, "''")
@@ -143,11 +156,11 @@ export function sanitizeId(id: string): string {
 export function validateJSON(jsonString: string): any {
   try {
     const parsed = JSON.parse(jsonString);
-    
+
     // Verificar que no sea una función o un objeto con funciones
     const jsonStr = JSON.stringify(parsed);
     const reparsed = JSON.parse(jsonStr);
-    
+
     return reparsed;
   } catch (error) {
     throw new Error('JSON inválido');
@@ -157,7 +170,7 @@ export function validateJSON(jsonString: string): any {
 // Función para sanitizar HTML (útil para descripciones ricas)
 export function sanitizeHTML(html: string): string {
   if (!html) return '';
-  
+
   // Eliminar etiquetas peligrosas pero mantener estructura básica
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -171,4 +184,4 @@ export function sanitizeHTML(html: string): string {
     .replace(/on\w+='[^']*'/gi, '')
     .replace(/javascript:/gi, 'nojavascript:')
     .replace(/data:/gi, 'nodata:');
-} 
+}

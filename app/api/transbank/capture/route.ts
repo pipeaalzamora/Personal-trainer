@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -18,19 +19,22 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener datos de la solicitud
     const { token, buy_order, authorization_code, capture_amount } = await request.json();
-    
+
     if (!token || !buy_order || !authorization_code || !capture_amount) {
       return NextResponse.json(
         { error: 'Faltan parámetros obligatorios: token, buy_order, authorization_code, capture_amount' },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // URL de la API de captura de Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}/capture`;
-    
+
     // Realizar solicitud de captura a Transbank
     const response = await fetch(apiUrl, {
       method: 'PUT',
@@ -45,15 +49,15 @@ export async function POST(request: Request) {
         capture_amount: capture_amount
       })
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Error al capturar la transacción: ${response.status} ${response.statusText}`);
     }
-    
+
     // Devolver respuesta al cliente
     const data = await response.json();
-    
+
     return NextResponse.json(data, { headers: corsHeaders });
   } catch (error) {
     return NextResponse.json(
@@ -61,4 +65,4 @@ export async function POST(request: Request) {
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

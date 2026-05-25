@@ -21,17 +21,15 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
   // Obtener la imagen correcta según el género
   const getCorrectImage = () => {
     if (isFemale && course.imageFemale) {
-      return typeof course.imageFemale === "string"
-        ? course.imageFemale
-        : course.imageFemale.src;
+      return course.imageFemale;
     }
-    return typeof course.image === "string" ? course.image : course.image.src;
+    return course.image;
   };
 
   // Verificar si el curso debe mostrar "Próximamente"
   const isComingSoon = () => {
     const category = course.category?.toLowerCase() || "";
-    
+
     // Categorías que siempre muestran "PRÓXIMAMENTE"
     return category.includes("ganancia de fuerza");
   };

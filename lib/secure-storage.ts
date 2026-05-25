@@ -6,7 +6,7 @@
 // Nombres de las cookies/keys
 export const STORAGE_KEYS = {
   CART: 'cart_data',
-  USER_EMAIL: 'user_email',
+  BUYER_EMAIL: 'buyer_email',
   TBK_TOKEN: 'tbk_token',
   TBK_BUY_ORDER: 'tbk_buy_order',
   TBK_SESSION_ID: 'tbk_session_id',
@@ -27,12 +27,12 @@ const COOKIE_OPTIONS = {
  */
 export function setClientCookie(name: string, value: string, maxAge?: number): void {
   if (typeof document === 'undefined') return;
-  
+
   const options = {
     ...COOKIE_OPTIONS,
     maxAge: maxAge || COOKIE_OPTIONS.maxAge,
   };
-  
+
   const cookieString = `${name}=${encodeURIComponent(value)}; path=${options.path}; max-age=${options.maxAge}; samesite=${options.sameSite}${options.secure ? '; secure' : ''}`;
   document.cookie = cookieString;
 }
@@ -42,7 +42,7 @@ export function setClientCookie(name: string, value: string, maxAge?: number): v
  */
 export function getClientCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
-  
+
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [cookieName, cookieValue] = cookie.trim().split('=');
@@ -75,7 +75,7 @@ export function saveCartData(cart: any[]): void {
 export function getCartData(): any[] {
   const cartJson = getClientCookie(STORAGE_KEYS.CART);
   if (!cartJson) return [];
-  
+
   try {
     return JSON.parse(cartJson);
   } catch {
@@ -102,12 +102,12 @@ export function saveTransactionData(data: {
 }): void {
   // Usar cookies con tiempo de vida corto para datos de transacción (30 min)
   const shortMaxAge = 60 * 30;
-  
-  setClientCookie(STORAGE_KEYS.USER_EMAIL, data.email, shortMaxAge);
+
+  setClientCookie(STORAGE_KEYS.BUYER_EMAIL, data.email, shortMaxAge);
   setClientCookie(STORAGE_KEYS.TBK_BUY_ORDER, data.buyOrder, shortMaxAge);
   setClientCookie(STORAGE_KEYS.TBK_SESSION_ID, data.sessionId, shortMaxAge);
   setClientCookie(STORAGE_KEYS.TBK_AMOUNT, data.amount.toString(), shortMaxAge);
-  
+
   if (data.token) {
     setClientCookie(STORAGE_KEYS.TBK_TOKEN, data.token, shortMaxAge);
   }
@@ -124,11 +124,11 @@ export function getTransactionData(): {
   token: string | null;
 } {
   return {
-    email: getClientCookie(STORAGE_KEYS.USER_EMAIL),
+    email: getClientCookie(STORAGE_KEYS.BUYER_EMAIL),
     buyOrder: getClientCookie(STORAGE_KEYS.TBK_BUY_ORDER),
     sessionId: getClientCookie(STORAGE_KEYS.TBK_SESSION_ID),
-    amount: getClientCookie(STORAGE_KEYS.TBK_AMOUNT) 
-      ? parseInt(getClientCookie(STORAGE_KEYS.TBK_AMOUNT)!, 10) 
+    amount: getClientCookie(STORAGE_KEYS.TBK_AMOUNT)
+      ? parseInt(getClientCookie(STORAGE_KEYS.TBK_AMOUNT)!, 10)
       : null,
     token: getClientCookie(STORAGE_KEYS.TBK_TOKEN),
   };
@@ -138,7 +138,7 @@ export function getTransactionData(): {
  * Limpia todos los datos de transacción
  */
 export function clearTransactionData(): void {
-  deleteClientCookie(STORAGE_KEYS.USER_EMAIL);
+  deleteClientCookie(STORAGE_KEYS.BUYER_EMAIL);
   deleteClientCookie(STORAGE_KEYS.TBK_BUY_ORDER);
   deleteClientCookie(STORAGE_KEYS.TBK_SESSION_ID);
   deleteClientCookie(STORAGE_KEYS.TBK_AMOUNT);

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendPaymentReceiptEmail } from '@/lib/email';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -18,26 +19,29 @@ export async function OPTIONS() {
 
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener datos de la solicitud
-    const { 
-      email, 
+    const {
+      email,
       transactionId,
       cardNumber,
       amount,
       date,
       authCode
     } = await request.json();
-    
+
     if (!email || !transactionId || !cardNumber || !amount) {
       return NextResponse.json(
-        { 
-          error: 'Faltan datos requeridos', 
-          requiredFields: ['email', 'transactionId', 'cardNumber', 'amount'] 
+        {
+          error: 'Faltan datos requeridos',
+          requiredFields: ['email', 'transactionId', 'cardNumber', 'amount']
         },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     // Enviar email de comprobante de pago
     const emailSent = await sendPaymentReceiptEmail(
       email,
@@ -49,7 +53,7 @@ export async function POST(request: Request) {
         authCode: authCode || 'N/A'
       }
     );
-    
+
     if (!emailSent) {
       console.error('Error al enviar comprobante de pago');
       return NextResponse.json(
@@ -57,20 +61,20 @@ export async function POST(request: Request) {
         { status: 500, headers: corsHeaders }
       );
     }
-    
+
     return NextResponse.json(
       { success: true, message: 'Comprobante de pago enviado correctamente' },
       { headers: corsHeaders }
     );
-    
+
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error instanceof Error ? error.message : 'Error desconocido' 
+        error: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

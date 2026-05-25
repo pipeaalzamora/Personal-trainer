@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { associateExcelToCourse } from '@/lib/supabase-api';
+import { requireAdminRequest } from '@/lib/server-auth';
 
 // Cabeceras CORS para permitir peticiones desde el frontend
 const corsHeaders = {
@@ -19,33 +20,36 @@ export async function OPTIONS() {
 // Asociar un archivo Excel específico a un curso
 export async function POST(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     // Obtener datos de la solicitud
     const { courseId, excelFile } = await request.json();
-    
+
     if (!courseId || !excelFile) {
       return NextResponse.json(
         { error: 'Se requiere courseId y excelFile' },
         { status: 400, headers: corsHeaders }
       );
     }
-    
+
     console.log(`Asociando archivo Excel al curso ${courseId}:`, excelFile.filename);
-    
+
     // Asociar archivo al curso
     const success = await associateExcelToCourse(courseId, excelFile);
-    
+
     if (success) {
       return NextResponse.json(
-        { 
-          success: true, 
+        {
+          success: true,
           message: `Archivo ${excelFile.filename} asociado correctamente al curso ${courseId}`
         },
         { headers: corsHeaders }
       );
     } else {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           message: `Error al asociar archivo ${excelFile.filename} al curso ${courseId}`
         },
         { status: 500, headers: corsHeaders }
@@ -54,7 +58,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error al asociar archivo Excel:', error);
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Error desconocido',
         success: false
       },
@@ -66,10 +70,13 @@ export async function POST(request: Request) {
 // Asociar automáticamente todos los archivos Excel a sus cursos
 export async function GET(request: Request) {
   try {
+    const unauthorized = requireAdminRequest(request);
+    if (unauthorized) return unauthorized;
+
     console.log('Endpoint GET deshabilitado - función associateAllExcelFilesToCourses no implementada');
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: 'Esta funcionalidad no está implementada. Use el método POST para asociar archivos individuales.'
       },
@@ -78,11 +85,11 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error en endpoint GET:', error);
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Error desconocido',
         success: false
       },
       { status: 500, headers: corsHeaders }
     );
   }
-} 
+}

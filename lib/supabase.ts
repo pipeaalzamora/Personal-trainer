@@ -1,37 +1,42 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 
-// Verificar que las variables de entorno estén definidas
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Validación de las variables de entorno
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERROR: Faltan las variables de entorno de Supabase:');
-  if (!supabaseUrl) console.error('- NEXT_PUBLIC_SUPABASE_URL no está definido');
-  if (!supabaseAnonKey) console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY no está definido');
+export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
+export const hasSupabaseAdminConfig = Boolean(supabaseUrl && supabaseServiceKey);
+
+if (!hasSupabaseConfig) {
+  console.warn('ADVERTENCIA: Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY.');
 }
+
+if (!hasSupabaseAdminConfig) {
+  console.warn('ADVERTENCIA: Falta SUPABASE_SERVICE_ROLE_KEY. Las operaciones administrativas fallarán en runtime.');
+}
+
+const resolvedSupabaseUrl = supabaseUrl || 'http://127.0.0.1:54321';
+const resolvedAnonKey = supabaseAnonKey || 'missing-supabase-anon-key';
+const resolvedServiceKey = supabaseServiceKey || 'missing-supabase-service-role-key';
+const isBrowser = typeof window !== 'undefined';
 
 // Cliente público (para el frontend)
 export const supabase: SupabaseClient<Database> = createClient<Database>(
-  supabaseUrl || '',
-  supabaseAnonKey || '',
+  resolvedSupabaseUrl,
+  resolvedAnonKey,
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-    global: {
-      fetch: (...args) => fetch(...args),
+      persistSession: isBrowser,
+      autoRefreshToken: isBrowser,
     },
   }
 );
 
 // Cliente con service_role (para operaciones del servidor - bypasea RLS)
 export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
-  supabaseUrl || '',
-  supabaseServiceKey || supabaseAnonKey || '',
+  resolvedSupabaseUrl,
+  resolvedServiceKey,
   {
     auth: {
       persistSession: false,
@@ -39,6 +44,12 @@ export const supabaseAdmin: SupabaseClient<Database> = createClient<Database>(
     },
   }
 );
+
+export function assertSupabaseAdminConfigured() {
+  if (!hasSupabaseAdminConfig) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurado');
+  }
+}
 
 // Función para validar la conexión (útil para diagnósticos)
 export async function testConnection() {
@@ -48,12 +59,12 @@ export async function testConnection() {
       .from('users')
       .select('id')
       .limit(1);
-    
+
     if (error) {
       console.error('Error al conectar con Supabase:', error);
       return { success: false, error };
     }
-    
+
     return { success: true, data };
   } catch (error) {
     console.error('Error inesperado al probar conexión:', error);
@@ -119,4 +130,4 @@ export async function deleteFile(bucket: string, path: string) {
 }
 
 // Exportar por defecto
-export default supabase; 
+export default supabase;

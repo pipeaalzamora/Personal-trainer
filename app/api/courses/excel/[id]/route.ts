@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCourseExcelFile } from '@/lib/supabase-api';
+import { requireCourseAccess } from '@/lib/course-access';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
+    const unauthorized = await requireCourseAccess(req, id);
+    if (unauthorized) return unauthorized;
+
     const searchParams = req.nextUrl.searchParams;
     const fileIndex = searchParams.get('fileIndex');
-    
+
     // Obtener el archivo Excel del curso
     const result = await getCourseExcelFile(id);
-    
+
     if (!result.data && !result.isPackComplete) {
       return NextResponse.json(
         { error: 'Archivo no encontrado' },
@@ -71,4 +75,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

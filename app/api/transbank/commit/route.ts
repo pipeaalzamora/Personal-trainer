@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { config } from '@/config/config';
-import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getUserByEmail, getCourseExcelFile } from '@/lib/supabase-api';
+import { updateOrderTransaction, getOrderByBuyOrder, addOrderTransactionHistory, getOrderItems, getCourseExcelFile } from '@/lib/supabase-api';
 import { sendOrderConfirmationEmail, sendPaymentReceiptEmail } from '@/lib/email';
 import { supabaseAdmin } from '@/lib/supabase';
+import { setUserSessionCookie } from '@/lib/server-auth';
 
 // CORS manejado por middleware global - no necesitamos headers aquí
 
@@ -16,10 +17,10 @@ async function getExcelFilesForCourse(courseId: string) {
       isPackComplete: result.isPackComplete,
       packFilesCount: result.packFiles?.length
     });
-    
+
     if (result.isPackComplete && result.packFiles) {
       // Si es un pack completo, devolver todos los archivos
-      const files = result.packFiles.filter(file => 
+      const files = result.packFiles.filter(file =>
         file.data !== null && file.filename !== null && file.contentType !== null
       ).map(file => ({
         filename: file.filename!,
@@ -37,7 +38,7 @@ async function getExcelFilesForCourse(courseId: string) {
         contentType: result.contentType
       }];
     }
-    
+
     console.log(`getExcelFilesForCourse: No se encontraron archivos para curso ${courseId}`);
     return [];
   } catch (error) {
@@ -54,12 +55,12 @@ async function checkEmailsStatus(orderId: string): Promise<boolean> {
       .select('emails_sent')
       .eq('id', orderId)
       .maybeSingle();
-    
+
     if (error) {
       console.error('Error al verificar estado de correos:', error);
       return false;
     }
-    
+
     return data?.emails_sent === true;
   } catch (error) {
     console.error('Error al verificar estado de correos:', error);
@@ -72,34 +73,64 @@ async function markEmailsAsSent(orderId: string): Promise<boolean> {
   try {
     const { data, error } = await supabaseAdmin
       .from('orders')
-      .update({ 
+      .update({
         emails_sent: true,
         emails_sent_at: new Date().toISOString()
       })
       .eq('id', orderId)
       .select()
       .maybeSingle();
-    
+
     if (error) {
       console.error('Error al marcar correos como enviados:', error);
       return false;
     }
-    
+
     // También registrar en el historial de transacciones
     await addOrderTransactionHistory(
       orderId,
       'EMAIL_SENT',
-      { 
+      {
         emailsSent: true,
         timestamp: new Date().toISOString()
       }
     );
-    
+
     return true;
   } catch (error) {
     console.error('Error al marcar correos como enviados:', error);
     return false;
   }
+}
+
+async function resolveOrderEmail(order: any): Promise<string | null> {
+  const transactionData = order.transaction_response;
+
+  if (
+    transactionData &&
+    typeof transactionData === 'object' &&
+    !Array.isArray(transactionData) &&
+    'sessionData' in transactionData &&
+    transactionData.sessionData &&
+    typeof transactionData.sessionData === 'object' &&
+    'email' in transactionData.sessionData
+  ) {
+    return String(transactionData.sessionData.email).toLowerCase();
+  }
+
+  if (order.user_id) {
+    const { data: userData } = await supabaseAdmin
+      .from('users')
+      .select('email')
+      .eq('id', order.user_id)
+      .maybeSingle();
+
+    if (userData?.email) {
+      return userData.email.toLowerCase();
+    }
+  }
+
+  return null;
 }
 
 export async function POST(request: Request) {
@@ -115,11 +146,11 @@ export async function POST(request: Request) {
 
     // URL de la API de confirmación de Transbank
     const apiUrl = `${config.webpayHost}/rswebpaytransaction/api/webpay/v1.2/transactions/${token}`;
-    
+
     // Asegurar que las credenciales no sean undefined
     const commerceCode = config.commerceCode || '';
     const apiKey = config.apiKey || '';
-    
+
     // Confirmar la transacción con Transbank
     const response = await fetch(apiUrl, {
       method: 'PUT',
@@ -129,33 +160,33 @@ export async function POST(request: Request) {
         'Tbk-Api-Key-Secret': apiKey
       }
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Error al confirmar la transacción: ${response.status} ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
+
     // Determinar el estado de la transacción
     let status = 'FAILED';
     if (data.response_code === 0) {
       status = 'COMPLETED';
     }
-    
+
     // Buscar la orden asociada a esta transacción
     const existingOrder = await getOrderByBuyOrder(data.buy_order);
-    
+
     if (!existingOrder) {
       return NextResponse.json(
         { error: `No se encontró la orden con buy_order ${data.buy_order}` },
         { status: 404 }
       );
     }
-    
+
     // IMPORTANTE: Verificar si los correos ya fueron enviados ANTES de actualizar la orden
     const emailsAlreadySent = await checkEmailsStatus(existingOrder.id);
-    
+
     // Actualizar la orden en la base de datos
     const updatedOrder = await updateOrderTransaction(
       data.buy_order,
@@ -163,7 +194,7 @@ export async function POST(request: Request) {
       data,
       token
     );
-    
+
     // Registrar en el historial de transacciones
     if (updatedOrder && updatedOrder.id) {
       // Obtener los items de la orden y los nombres de los cursos
@@ -175,76 +206,40 @@ export async function POST(request: Request) {
         status,
         { courseNames }
       );
-      
+
       // Si la transacción fue completada con éxito y los correos NO han sido enviados aún
+      const customerEmail = status === 'COMPLETED'
+        ? await resolveOrderEmail(updatedOrder)
+        : null;
+
       if (status === 'COMPLETED' && !emailsAlreadySent) {
         try {
           console.log(`Preparando envío de correos para orden ${updatedOrder.id} (buyOrder: ${data.buy_order})`);
-          
-          // Intentar obtener el email directamente de los datos disponibles
-          let email: string | null = null;
-          
-          // 1. Intentar obtener el email del localStorage (frontend)
-          // El email puede estar en los datos de la transacción si se pasó desde el frontend
-          const transactionData = updatedOrder.transaction_response;
-          if (transactionData && 
-              typeof transactionData === 'object' && 
-              'sessionData' in transactionData && 
-              typeof transactionData.sessionData === 'object' &&
-              transactionData.sessionData &&
-              'email' in transactionData.sessionData) {
-            email = transactionData.sessionData.email as string;
-          }
-          
-          // 2. Si no hay email en la transacción, intentar obtenerlo por user_id
-          if (!email && updatedOrder.user_id) {
-            try {
-              const { data: userData } = await supabaseAdmin
-                .from('users')
-                .select('email')
-                .eq('id', updatedOrder.user_id)
-                .maybeSingle();
-              
-              if (userData && userData.email) {
-                email = userData.email;
-              }
-            } catch (userError) {
-              console.error('Error al obtener email de usuario:', userError);
-            }
-          }
-          
-          // 3. Como último recurso, intentar extraer el email de otros campos
-          if (!email) {
-            // El email podría estar en el session_id (a veces se usa un formato como "user@example.com-timestamp")
-            const sessionParts = updatedOrder.session_id.split('-');
-            const possibleEmail = sessionParts[0];
-            if (possibleEmail && possibleEmail.includes('@')) {
-              email = possibleEmail;
-            }
-          }
-          
+
+          const email = customerEmail;
+
           // Si se encontró un email, proceder con el envío
           if (email) {
             console.log(`Email encontrado: ${email}`);
-            
+
             // IMPORTANTE: Marcar PRIMERO como enviados para evitar condiciones de carrera
             const marked = await markEmailsAsSent(updatedOrder.id);
-            
+
             if (!marked) {
               console.error('No se pudo marcar los correos como enviados, cancelando envío');
               return NextResponse.json(data);
             }
-            
+
             // Obtener los items y títulos de cursos
             const orderItems = await getOrderItems(updatedOrder.id);
             const courseIds = orderItems.map(item => item.course_id);
-            const courseTitles = orderItems.map(item => 
+            const courseTitles = orderItems.map(item =>
               item.course && 'title' in item.course ? item.course.title : `Curso ${item.course_id}`
             );
-            const courseCategories = orderItems.map(item => 
+            const courseCategories = orderItems.map(item =>
               item.course && 'category' in item.course && item.course.category ? item.course.category : 'Sin categoría'
             );
-            
+
             // 1. Enviar comprobante de pago
             const receiptSent = await sendPaymentReceiptEmail(
               email,
@@ -256,17 +251,17 @@ export async function POST(request: Request) {
                 authCode: data.authorization_code
               }
             );
-            
+
             if (receiptSent) {
               console.log('Comprobante de pago enviado correctamente');
-              
+
               // 2. Obtener archivos Excel de los cursos
               let attachments: Array<{
                 filename: string;
                 content: Buffer;
                 contentType: string;
               }> = [];
-              
+
               try {
                 // Obtener archivos para cada curso
                 console.log(`Obteniendo archivos Excel para ${courseIds.length} cursos:`, courseIds);
@@ -279,7 +274,7 @@ export async function POST(request: Request) {
               } catch (excelError) {
                 console.error('Error al obtener archivos Excel:', excelError);
               }
-              
+
               // 3. Enviar correo de confirmación de compra (con o sin adjuntos)
               const confirmationSent = await sendOrderConfirmationEmail(
                 email,
@@ -292,7 +287,7 @@ export async function POST(request: Request) {
                   attachments: attachments.length > 0 ? attachments : undefined
                 }
               );
-              
+
               if (confirmationSent) {
                 console.log('Correo de confirmación enviado correctamente');
               } else {
@@ -311,8 +306,17 @@ export async function POST(request: Request) {
         console.log(`Omitiendo envío de correos para orden ${updatedOrder.id} - ya fueron enviados anteriormente`);
       }
     }
-    
-    return NextResponse.json(data);
+
+    const jsonResponse = NextResponse.json(data);
+    if (status === 'COMPLETED') {
+      const refreshedOrder = await getOrderByBuyOrder(data.buy_order);
+      const email = refreshedOrder ? await resolveOrderEmail(refreshedOrder) : null;
+      if (email) {
+        setUserSessionCookie(jsonResponse, email);
+      }
+    }
+
+    return jsonResponse;
   } catch (error) {
     console.error('Error en la ruta commit:', error);
     return NextResponse.json(
@@ -320,4 +324,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

@@ -6,9 +6,11 @@ export function getRequestInfo(req: NextRequest | Request) {
   let userAgent = '';
   let origin = '';
   let path = '';
-  
+
   if (req instanceof NextRequest) {
-    ip = req.ip || '';
+    ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+         req.headers.get('x-real-ip') ||
+         '';
     userAgent = req.headers.get('user-agent') || '';
     origin = req.headers.get('origin') || '';
     path = req.nextUrl.pathname;
@@ -21,7 +23,7 @@ export function getRequestInfo(req: NextRequest | Request) {
       path = '';
     }
   }
-  
+
   return { ip, userAgent, origin, path };
 }
 
@@ -86,4 +88,4 @@ export const logger = {
     const metadata = info.metadata || {};
     console.log(`[${level.toUpperCase()}] ${message}`, Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : '');
   }
-}; 
+};

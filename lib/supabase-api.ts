@@ -10,10 +10,7 @@ type OrderItem = Database['public']['Tables']['order_items']['Row'];
 type FileRecord = Database['public']['Tables']['files']['Row'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 
-// Tipo extendido para cursos con category
-export type Course = CourseRow & {
-  category?: string;
-};
+export type Course = CourseRow;
 
 // Constantes
 const BUCKET_COURSES = 'course-files';
@@ -28,12 +25,12 @@ export async function getCourses(): Promise<Course[]> {
     .from('courses')
     .select('*')
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error al obtener cursos:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
@@ -43,12 +40,12 @@ export async function getCourseById(id: string): Promise<Course | null> {
     .select('*')
     .eq('id', id)
     .single();
-  
+
   if (error && error.code !== 'PGRST116') {
     console.error('Error al obtener curso por ID:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -58,63 +55,79 @@ export async function getCourseByTitle(title: string): Promise<Course | null> {
     .select('*')
     .eq('title', title)
     .single();
-  
+
   if (error && error.code !== 'PGRST116') {
     console.error('Error al obtener curso por título:', error);
     throw error;
   }
-  
+
   return data;
 }
 
+export async function getCoursesByIds(ids: string[]): Promise<Course[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('courses')
+    .select('*')
+    .in('id', ids);
+
+  if (error) {
+    console.error('Error al obtener cursos por IDs:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
 export async function createCourse(course: CourseInsert): Promise<Course> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('courses')
     .insert([course])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al crear curso:', error);
     throw error;
   }
-  
+
   return data;
 }
 
 export async function updateCourse(id: string, updates: Partial<Course>): Promise<Course> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('courses')
     .update(updates)
     .eq('id', id)
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al actualizar curso:', error);
     throw error;
   }
-  
+
   return data;
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  const { data: files } = await supabase
+  const { data: files } = await supabaseAdmin
     .from('files')
     .select('path')
     .eq('course_id', id);
-    
+
   if (files && files.length > 0) {
     for (const file of files) {
       await deleteFile(BUCKET_COURSES, file.path);
     }
   }
-  
-  const { error } = await supabase
+
+  const { error } = await supabaseAdmin
     .from('courses')
     .delete()
     .eq('id', id);
-  
+
   if (error) {
     console.error('Error al eliminar curso:', error);
     throw error;
@@ -126,17 +139,17 @@ export async function deleteCourse(id: string): Promise<void> {
 // ============================================
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('users')
     .select('*')
     .eq('email', email)
     .single();
-  
+
   if (error && error.code !== 'PGRST116') {
     console.error('Error al obtener usuario por email:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -150,12 +163,12 @@ export async function createUser(email: string, verificationToken: string): Prom
     }])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al crear usuario:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -166,12 +179,12 @@ export async function verifyUser(token: string): Promise<boolean> {
     .eq('verification_token', token)
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al verificar usuario:', error);
     return false;
   }
-  
+
   return !!data;
 }
 
@@ -180,17 +193,17 @@ export async function verifyUser(token: string): Promise<boolean> {
 // ============================================
 
 export async function getUserOrders(userId: string): Promise<Order[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('orders')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error al obtener órdenes del usuario:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
@@ -199,12 +212,12 @@ export async function getOrderItems(orderId: string): Promise<(OrderItem & { cou
     .from('order_items')
     .select(`*, course:courses(*)`)
     .eq('order_id', orderId);
-  
+
   if (error) {
     console.error('Error al obtener items de la orden:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
@@ -226,18 +239,18 @@ export async function createOrder(
     transaction_token: token,
     transaction_response: additionalData
   };
-  
+
   const { data, error } = await supabaseAdmin
     .from('orders')
     .insert([orderData])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al crear orden:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -263,7 +276,13 @@ export async function updateOrderTransaction(
 
   if (token) updateData.transaction_token = token;
   if (transactionData && Object.keys(transactionData).length > 0) {
-    updateData.transaction_response = transactionData;
+    const existingResponse = existingOrder.transaction_response;
+    const canMergeExistingResponse = existingResponse && typeof existingResponse === 'object' && !Array.isArray(existingResponse);
+    const canMergeNewResponse = typeof transactionData === 'object' && !Array.isArray(transactionData);
+
+    updateData.transaction_response = canMergeExistingResponse && canMergeNewResponse
+      ? { ...existingResponse, ...transactionData }
+      : transactionData;
   }
 
   const { data, error } = await supabaseAdmin
@@ -272,7 +291,7 @@ export async function updateOrderTransaction(
     .eq('buy_order', buyOrder)
     .select()
     .single();
-  
+
   if (error) throw error;
   return data;
 }
@@ -283,12 +302,12 @@ export async function getOrderByBuyOrder(buyOrder: string): Promise<Order | null
     .select('*')
     .eq('buy_order', buyOrder)
     .single();
-  
+
   if (error && error.code !== 'PGRST116') {
     console.error('Error al obtener orden por buy_order:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -309,39 +328,39 @@ export async function createOrderItems(
 ): Promise<OrderItem[]> {
   // Obtener todos los cursos de los items en una sola query
   const courseIds = items.map(item => item.course_id);
-  
-  const { data: coursesData, error: coursesError } = await supabase
+
+  const { data: coursesData, error: coursesError } = await supabaseAdmin
     .from('courses')
     .select('id, title, description, category')
     .in('id', courseIds);
-  
+
   if (coursesError) {
     console.error('Error al obtener información de cursos:', coursesError);
   }
-  
+
   // Crear mapa de cursos para acceso rápido
   const coursesMap = new Map(
     (coursesData || []).map(course => [course.id, course])
   );
-  
+
   let processedItems: ProcessedOrderItem[] = [...items];
-  
+
   // Identificar packs y sus categorías
   const packCategories: { itemId: string; category: string }[] = [];
-  
+
   for (const item of items) {
     const course = coursesMap.get(item.course_id);
     if (!course) continue;
-    
-    const isPack = course.title?.toLowerCase().includes('pack completo') || 
+
+    const isPack = course.title?.toLowerCase().includes('pack completo') ||
                   course.category?.toLowerCase().includes('pack-completo');
-    
+
     if (isPack) {
       const packCategory = course.category?.toLowerCase() || '';
       const titleLower = course.title?.toLowerCase() || '';
-      
+
       let categoryToSearch = '';
-      
+
       if (packCategory.includes('pack-completo-')) {
         categoryToSearch = packCategory.replace('pack-completo-', '');
       } else if (titleLower.includes('pack completo')) {
@@ -350,43 +369,43 @@ export async function createOrderItems(
           categoryToSearch = parts[1].trim();
         }
       }
-      
+
       if (categoryToSearch) {
         packCategories.push({ itemId: item.course_id, category: categoryToSearch });
       }
     }
   }
-  
+
   // Si hay packs, buscar cursos individuales en una sola query
   if (packCategories.length > 0) {
     // Construir query para todas las categorías de packs
     const categoryPatterns = packCategories.map(p => p.category);
     const packItemIds = packCategories.map(p => p.itemId);
-    
-    const { data: individualCourses, error: indError } = await supabase
+
+    const { data: individualCourses, error: indError } = await supabaseAdmin
       .from('courses')
       .select('id, title, price, category')
       .not('id', 'in', `(${packItemIds.join(',')})`)
       .or(categoryPatterns.map(cat => `category.ilike.%${cat}%`).join(','));
-    
+
     if (!indError && individualCourses && individualCourses.length > 0) {
       // Agrupar cursos por categoría de pack
       for (const pack of packCategories) {
-        const matchingCourses = individualCourses.filter(course => 
+        const matchingCourses = individualCourses.filter(course =>
           course.category?.toLowerCase().includes(pack.category)
         );
-        
+
         const additionalItems = matchingCourses.map(course => ({
           course_id: course.id,
           price: 0,
           is_part_of_pack: true
         }));
-        
+
         processedItems = [...processedItems, ...additionalItems];
       }
     }
   }
-  
+
   // Eliminar duplicados
   const uniqueItems = processedItems.reduce((acc, item) => {
     if (!acc.find(i => i.course_id === item.course_id)) {
@@ -394,24 +413,24 @@ export async function createOrderItems(
     }
     return acc;
   }, [] as ProcessedOrderItem[]);
-  
+
   const orderItems = uniqueItems.map(item => ({
     order_id: orderId,
     course_id: item.course_id,
     price: item.price,
     is_part_of_pack: item.is_part_of_pack || false
   }));
-  
+
   const { data, error } = await supabaseAdmin
     .from('order_items')
     .insert(orderItems)
     .select();
-  
+
   if (error) {
     console.error('Error al crear items de orden:', error);
     throw error;
   }
-  
+
   return data;
 }
 
@@ -420,17 +439,17 @@ export async function createOrderItems(
 // ============================================
 
 export async function getOrderTransactionHistory(orderId: string): Promise<any[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('order_transaction_history')
     .select('*')
     .eq('order_id', orderId)
     .order('created_at', { ascending: true });
-  
+
   if (error) {
     console.error('Error al obtener historial de transacción:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
@@ -444,12 +463,12 @@ export async function addOrderTransactionHistory(
     .insert([{ order_id: orderId, status, data }])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al agregar historial de transacción:', error);
     throw error;
   }
-  
+
   return result;
 }
 
@@ -458,22 +477,22 @@ export async function addOrderTransactionHistory(
 // ============================================
 
 export async function uploadCourseFile(
-  courseId: string, 
+  courseId: string,
   file: File | Blob,
   fileName: string,
   fileType: string,
   fileSize: number
 ): Promise<string> {
   const uniquePath = `courses/${courseId}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9\.-]/g, '_')}`;
-  
+
   await uploadFile(BUCKET_COURSES, uniquePath, file, {
     contentType: fileType,
     upsert: true
   });
-  
+
   const publicUrl = getPublicUrl(BUCKET_COURSES, uniquePath);
-  
-  const { error } = await supabase
+
+  const { error } = await supabaseAdmin
     .from('files')
     .insert([{
       course_id: courseId,
@@ -484,50 +503,50 @@ export async function uploadCourseFile(
     }])
     .select()
     .single();
-  
+
   if (error) {
     console.error('Error al registrar archivo:', error);
     throw error;
   }
-  
+
   return publicUrl;
 }
 
 export async function getCourseFiles(courseId: string): Promise<FileRecord[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('files')
     .select('*')
     .eq('course_id', courseId)
     .order('created_at', { ascending: false });
-  
+
   if (error) {
     console.error('Error al obtener archivos del curso:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
 export async function deleteCourseFile(fileId: string): Promise<void> {
-  const { data: file, error: fetchError } = await supabase
+  const { data: file, error: fetchError } = await supabaseAdmin
     .from('files')
     .select('path')
     .eq('id', fileId)
     .single();
-  
+
   if (fetchError) {
     console.error('Error al obtener información del archivo:', fetchError);
     throw fetchError;
   }
-  
+
   if (file) {
     await deleteFile(BUCKET_COURSES, file.path);
-    
-    const { error: deleteError } = await supabase
+
+    const { error: deleteError } = await supabaseAdmin
       .from('files')
       .delete()
       .eq('id', fileId);
-    
+
     if (deleteError) {
       console.error('Error al eliminar registro de archivo:', deleteError);
       throw deleteError;
@@ -562,29 +581,29 @@ function formatCategoryFolder(category: string): string {
 }
 
 function getContentType(filename: string): string {
-  return filename.endsWith('.xlsx') 
+  return filename.endsWith('.xlsx')
     ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     : 'application/vnd.ms-excel';
 }
 
 function isPhaseOneFile(filename: string): boolean {
   const lowerName = filename.toLowerCase();
-  const containsFaseI = lowerName.includes('fase i') || 
-                        lowerName.includes('fase-i') || 
-                        lowerName.includes('fase 1') || 
+  const containsFaseI = lowerName.includes('fase i') ||
+                        lowerName.includes('fase-i') ||
+                        lowerName.includes('fase 1') ||
                         lowerName.includes('fase-1') ||
                         lowerName.includes('iniciacion') ||
                         lowerName.includes('preparacion');
-                        
-  const containsFaseIIorIII = lowerName.includes('fase ii') || 
-                              lowerName.includes('fase-ii') || 
-                              lowerName.includes('fase 2') || 
+
+  const containsFaseIIorIII = lowerName.includes('fase ii') ||
+                              lowerName.includes('fase-ii') ||
+                              lowerName.includes('fase 2') ||
                               lowerName.includes('fase-2') ||
-                              lowerName.includes('fase iii') || 
-                              lowerName.includes('fase-iii') || 
-                              lowerName.includes('fase 3') || 
+                              lowerName.includes('fase iii') ||
+                              lowerName.includes('fase-iii') ||
+                              lowerName.includes('fase 3') ||
                               lowerName.includes('fase-3');
-  
+
   return containsFaseI && !containsFaseIIorIII;
 }
 
@@ -605,12 +624,12 @@ async function downloadExcelFile(filePath: string): Promise<{ buffer: Buffer; fi
   const { data, error } = await supabaseAdmin.storage
     .from(BUCKET_COURSE_EXCEL)
     .download(filePath);
-  
+
   if (error || !data) {
     console.log(`Error descargando ${filePath}:`, error);
     return null;
   }
-  
+
   const buffer = await data.arrayBuffer().then(ab => Buffer.from(ab));
   const filename = filePath.split('/').pop() || '';
   return { buffer, filename };
@@ -618,32 +637,32 @@ async function downloadExcelFile(filePath: string): Promise<{ buffer: Buffer; fi
 
 async function findExcelInFolder(folderPath: string, phaseIdentifier?: string): Promise<ExcelFileResult> {
   console.log(`findExcelInFolder: buscando en ${folderPath}`);
-  
+
   const { data: files, error } = await supabaseAdmin.storage
     .from(BUCKET_COURSE_EXCEL)
     .list(folderPath);
-  
+
   if (error || !files || files.length === 0) {
     return { data: null, filename: null, contentType: null };
   }
-  
+
   const excelFiles = files.filter(f => f.name.endsWith('.xlsx') || f.name.endsWith('.xls'));
   if (excelFiles.length === 0) {
     return { data: null, filename: null, contentType: null };
   }
-  
+
   const sortedFiles = sortExcelFilesByPhase(excelFiles);
   let targetFile = sortedFiles[0];
-  
+
   // Si buscamos fase específica
   if (phaseIdentifier === 'i' || phaseIdentifier === '1') {
     const phaseOneFile = sortedFiles.find(f => isPhaseOneFile(f.name));
     if (phaseOneFile) targetFile = phaseOneFile;
   }
-  
+
   const result = await downloadExcelFile(`${folderPath}/${targetFile.name}`);
   if (!result) return { data: null, filename: null, contentType: null };
-  
+
   return {
     data: result.buffer,
     filename: result.filename,
@@ -654,7 +673,7 @@ async function findExcelInFolder(folderPath: string, phaseIdentifier?: string): 
 // Mapeo de categorías de DB a carpetas del bucket
 function getCategoryFolder(category: string, isForWomen: boolean): string {
   const categoryLower = category.toLowerCase();
-  
+
   // Mapeo directo basado en la categoría
   if (categoryLower.includes('ganancia muscular')) {
     return isForWomen ? 'ganancia-muscular-mujeres' : 'ganancia-muscular';
@@ -668,7 +687,7 @@ function getCategoryFolder(category: string, isForWomen: boolean): string {
   if (categoryLower.includes('powerlifting')) {
     return 'powerlifting'; // TODO: agregar carpeta cuando exista
   }
-  
+
   // Fallback: formatear la categoría
   return formatCategoryFolder(category);
 }
@@ -677,7 +696,7 @@ function getCategoryFolder(category: string, isForWomen: boolean): string {
 function getPhaseFolder(title: string, category: string): string {
   const titleLower = title.toLowerCase();
   const categoryLower = category.toLowerCase();
-  
+
   // Detectar número de fase
   let phaseNum = 'i';
   if (titleLower.includes('fase i:') || titleLower.includes('fase 1') || titleLower.includes('fase i -')) {
@@ -687,20 +706,20 @@ function getPhaseFolder(title: string, category: string): string {
   } else if (titleLower.includes('fase iii:') || titleLower.includes('fase 3') || titleLower.includes('fase iii -')) {
     phaseNum = 'iii';
   }
-  
+
   // Determinar sufijo según categoría y fase
   if (categoryLower.includes('ganancia muscular')) {
     if (phaseNum === 'i') return 'fase-i-iniciacion';
     if (phaseNum === 'ii') return 'fase-ii-progresion';
     if (phaseNum === 'iii') return 'fase-iii-maestria';
   }
-  
+
   if (categoryLower.includes('pérdida de grasa') || categoryLower.includes('perdida de grasa')) {
     if (phaseNum === 'i') return 'fase-i-preparacion';
     if (phaseNum === 'ii') return 'fase-ii-construccion';
     if (phaseNum === 'iii') return 'fase-iii-potenciacion';
   }
-  
+
   // Fallback genérico
   return `fase-${phaseNum}`;
 }
@@ -716,29 +735,30 @@ export async function getCourseExcelFile(
       .select('title, category, description')
       .eq('id', courseId)
       .single();
-    
+
     if (courseError) {
       console.log(`Error al obtener curso ${courseId}:`, courseError);
       return { data: null, filename: null, contentType: null };
     }
-    
+
     if (!course) {
       console.log(`Curso ${courseId} no encontrado`);
       return { data: null, filename: null, contentType: null };
     }
 
-    console.log(`Buscando Excel para: "${course.title}" (${course.category})`);
+    const courseCategory = course.category || '';
+    console.log(`Buscando Excel para: "${course.title}" (${courseCategory})`);
 
     // Detectar si es para mujeres
-    const isForWomen = 
-      course.category?.toLowerCase().includes('mujer') || 
+    const isForWomen =
+      courseCategory.toLowerCase().includes('mujer') ||
       course.title?.toLowerCase().includes('mujer');
 
     // Detectar si es pack completo
     const isPackComplete = course.title.toLowerCase().includes('pack completo');
 
     // Obtener carpeta de categoría
-    const categoryFolder = getCategoryFolder(course.category, isForWomen);
+    const categoryFolder = getCategoryFolder(courseCategory, isForWomen);
     console.log(`Carpeta de categoría: ${categoryFolder}`);
 
     if (isPackComplete) {
@@ -749,37 +769,37 @@ export async function getCourseExcelFile(
     }
 
     // Curso individual - obtener carpeta de fase
-    const phaseFolder = getPhaseFolder(course.title, course.category);
+    const phaseFolder = getPhaseFolder(course.title, courseCategory);
     const fullPath = `${categoryFolder}/${phaseFolder}`;
     console.log(`Buscando en: ${fullPath}`);
 
     // Buscar archivo Excel en la carpeta
     const result = await findExcelInFolder(fullPath);
-    
+
     if (!result.data) {
       console.log(`No se encontró archivo en ${fullPath}, intentando alternativas...`);
-      
+
       // Intentar listar carpetas disponibles
       const { data: subfolders } = await supabaseAdmin.storage
         .from(BUCKET_COURSE_EXCEL)
         .list(categoryFolder);
-      
+
       if (subfolders && subfolders.length > 0) {
         console.log(`Carpetas disponibles en ${categoryFolder}:`, subfolders.map(f => f.name));
-        
+
         // Buscar carpeta que contenga el número de fase
         const phaseNum = phaseFolder.match(/fase-(\w+)/)?.[1] || 'i';
-        const matchingFolder = subfolders.find(f => 
+        const matchingFolder = subfolders.find(f =>
           f.name.toLowerCase().includes(`fase-${phaseNum}`)
         );
-        
+
         if (matchingFolder) {
           console.log(`Intentando con carpeta alternativa: ${matchingFolder.name}`);
           return findExcelInFolder(`${categoryFolder}/${matchingFolder.name}`);
         }
       }
     }
-    
+
     return result;
   } catch (error) {
     console.error(`Error al obtener archivo Excel para curso ${courseId}:`, error);
@@ -793,15 +813,15 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
   contentType: string | null;
 }>> {
   const files: Array<{ data: Buffer | null; filename: string | null; contentType: string | null }> = [];
-  
+
   console.log(`Buscando archivos de pack en: ${categoryFolder}`);
 
   // Estrategia 1: Buscar en carpeta pack-completo
   const packFolderName = `pack-completo-${categoryFolder.replace('-mujeres', '')}`;
   const packPath = `${categoryFolder}/${packFolderName}`;
-  
+
   console.log(`Intentando carpeta pack: ${packPath}`);
-  
+
   const { data: packFiles, error: packError } = await supabaseAdmin.storage
     .from(BUCKET_COURSE_EXCEL)
     .list(packPath);
@@ -811,7 +831,7 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
     const excelFiles = sortExcelFilesByPhase(
       packFiles.filter(f => f.name.endsWith('.xlsx') || f.name.endsWith('.xls'))
     );
-    
+
     for (const excelFile of excelFiles) {
       const result = await downloadExcelFile(`${packPath}/${excelFile.name}`);
       if (result) {
@@ -822,7 +842,7 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
         });
       }
     }
-    
+
     if (files.length > 0) {
       console.log(`Retornando ${files.length} archivos del pack`);
       return files;
@@ -831,7 +851,7 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
 
   // Estrategia 2: Buscar en carpetas de fase individuales
   console.log(`Buscando en carpetas de fase individuales...`);
-  
+
   const { data: subfolders } = await supabaseAdmin.storage
     .from(BUCKET_COURSE_EXCEL)
     .list(categoryFolder);
@@ -855,7 +875,7 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
     for (const phaseFolder of phaseFolders) {
       // Saltar carpetas de pack
       if (phaseFolder.name.includes('pack-completo')) continue;
-      
+
       const phasePath = `${categoryFolder}/${phaseFolder.name}`;
       const { data: phaseFiles } = await supabaseAdmin.storage
         .from(BUCKET_COURSE_EXCEL)
@@ -863,7 +883,7 @@ async function getPackCompleteFiles(categoryFolder: string): Promise<Array<{
 
       if (phaseFiles && phaseFiles.length > 0) {
         const excelFiles = phaseFiles.filter(f => f.name.endsWith('.xlsx') || f.name.endsWith('.xls'));
-        
+
         for (const excelFile of excelFiles) {
           const result = await downloadExcelFile(`${phasePath}/${excelFile.name}`);
           if (result) {
@@ -889,7 +909,7 @@ export async function getCoursesExcelFiles(courseIds: string[]): Promise<Array<{
   contentType: string | null;
 }>> {
   const results = [];
-  
+
   for (const courseId of courseIds) {
     try {
       const { data, filename, contentType } = await getCourseExcelFile(courseId);
@@ -899,7 +919,7 @@ export async function getCoursesExcelFiles(courseIds: string[]): Promise<Array<{
       results.push({ courseId, data: null, filename: null, contentType: null });
     }
   }
-  
+
   return results;
 }
 
@@ -911,22 +931,22 @@ export async function getAllExcelFiles(): Promise<Array<{
   course_name: string;
   phase: string;
 }>> {
-  const { data: categories } = await supabase.storage
+  const { data: categories } = await supabaseAdmin.storage
     .from(BUCKET_COURSE_EXCEL)
     .list('', { limit: 100, sortBy: { column: 'name', order: 'asc' } });
-  
+
   if (!categories) return [];
 
-  const { data: allCourses } = await supabase
+  const { data: allCourses } = await supabaseAdmin
     .from('courses')
     .select('id, title, category');
 
   const courseMap = new Map<string, { id?: string; title: string; category: string }>();
   if (allCourses) {
     allCourses.forEach(course => {
-      courseMap.set(course.id, { title: course.title, category: course.category });
+      courseMap.set(course.id, { title: course.title, category: course.category || '' });
       const formattedName = formatCategoryFolder(course.title);
-      courseMap.set(formattedName, { id: course.id, title: course.title, category: course.category });
+      courseMap.set(formattedName, { id: course.id, title: course.title, category: course.category || '' });
     });
   }
 
@@ -934,19 +954,19 @@ export async function getAllExcelFiles(): Promise<Array<{
   const categoryFolders = categories.filter(item => item.metadata?.mimetype === null);
 
   for (const categoryFolder of categoryFolders) {
-    const { data: courses } = await supabase.storage
+    const { data: courses } = await supabaseAdmin.storage
       .from(BUCKET_COURSE_EXCEL)
       .list(categoryFolder.name, { limit: 100 });
-    
+
     if (!courses) continue;
 
     const courseFolders = courses.filter(item => item.metadata?.mimetype === null);
 
     for (const courseFolder of courseFolders) {
-      const { data: files } = await supabase.storage
+      const { data: files } = await supabaseAdmin.storage
         .from(BUCKET_COURSE_EXCEL)
         .list(`${categoryFolder.name}/${courseFolder.name}`, { limit: 100 });
-      
+
       if (!files) continue;
 
       const courseInfo = courseMap.get(courseFolder.name);
@@ -995,11 +1015,11 @@ export async function associateExcelToCourse(
 
   const pathParts = excelFile.path.split('/');
   const category = excelFile.category || (pathParts.length > 1 ? pathParts[0] : undefined);
-  const phase = excelFile.phase || (excelFile.filename.toLowerCase().startsWith('fase') 
-    ? excelFile.filename.split('.')[0] 
+  const phase = excelFile.phase || (excelFile.filename.toLowerCase().startsWith('fase')
+    ? excelFile.filename.split('.')[0]
     : 'Fase 1');
 
-  const { error } = await supabase
+  const { error } = await supabaseAdmin
     .from('files')
     .insert([{
       course_id: courseId,

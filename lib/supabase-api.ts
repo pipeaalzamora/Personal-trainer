@@ -1,4 +1,4 @@
-import { supabase, supabaseAdmin, uploadFile, getPublicUrl, deleteFile } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 import type { Database } from '@/types/supabase';
 
 // Tipos base de Supabase
@@ -7,13 +7,11 @@ type CourseInsert = Database['public']['Tables']['courses']['Insert'];
 type User = Database['public']['Tables']['users']['Row'];
 type Order = Database['public']['Tables']['orders']['Row'];
 type OrderItem = Database['public']['Tables']['order_items']['Row'];
-type FileRecord = Database['public']['Tables']['files']['Row'];
 type OrderInsert = Database['public']['Tables']['orders']['Insert'];
 
 export type Course = CourseRow;
 
 // Constantes
-const BUCKET_COURSES = 'course-files';
 const BUCKET_COURSE_EXCEL = 'course-excel';
 
 // ============================================
@@ -112,17 +110,6 @@ export async function updateCourse(id: string, updates: Partial<Course>): Promis
 }
 
 export async function deleteCourse(id: string): Promise<void> {
-  const { data: files } = await supabaseAdmin
-    .from('files')
-    .select('path')
-    .eq('course_id', id);
-
-  if (files && files.length > 0) {
-    for (const file of files) {
-      await deleteFile(BUCKET_COURSES, file.path);
-    }
-  }
-
   const { error } = await supabaseAdmin
     .from('courses')
     .delete()
@@ -319,7 +306,7 @@ export async function getOrderByBuyOrder(buyOrder: string): Promise<Order | null
 interface ProcessedOrderItem {
   course_id: string;
   price: number;
-  is_part_of_pack?: boolean;
+  isPartOfPack?: boolean;
 }
 
 export async function createOrderItems(
@@ -398,7 +385,7 @@ export async function createOrderItems(
         const additionalItems = matchingCourses.map(course => ({
           course_id: course.id,
           price: 0,
-          is_part_of_pack: true
+          isPartOfPack: true
         }));
 
         processedItems = [...processedItems, ...additionalItems];
@@ -418,7 +405,7 @@ export async function createOrderItems(
     order_id: orderId,
     course_id: item.course_id,
     price: item.price,
-    is_part_of_pack: item.is_part_of_pack || false
+    is_part_of_pack: item.isPartOfPack ? 'true' : 'false'
   }));
 
   const { data, error } = await supabaseAdmin
@@ -471,89 +458,6 @@ export async function addOrderTransactionHistory(
 
   return result;
 }
-
-// ============================================
-// API de Archivos
-// ============================================
-
-export async function uploadCourseFile(
-  courseId: string,
-  file: File | Blob,
-  fileName: string,
-  fileType: string,
-  fileSize: number
-): Promise<string> {
-  const uniquePath = `courses/${courseId}/${Date.now()}_${fileName.replace(/[^a-zA-Z0-9\.-]/g, '_')}`;
-
-  await uploadFile(BUCKET_COURSES, uniquePath, file, {
-    contentType: fileType,
-    upsert: true
-  });
-
-  const publicUrl = getPublicUrl(BUCKET_COURSES, uniquePath);
-
-  const { error } = await supabaseAdmin
-    .from('files')
-    .insert([{
-      course_id: courseId,
-      name: fileName,
-      path: uniquePath,
-      type: fileType,
-      size: fileSize
-    }])
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error al registrar archivo:', error);
-    throw error;
-  }
-
-  return publicUrl;
-}
-
-export async function getCourseFiles(courseId: string): Promise<FileRecord[]> {
-  const { data, error } = await supabaseAdmin
-    .from('files')
-    .select('*')
-    .eq('course_id', courseId)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error('Error al obtener archivos del curso:', error);
-    throw error;
-  }
-
-  return data || [];
-}
-
-export async function deleteCourseFile(fileId: string): Promise<void> {
-  const { data: file, error: fetchError } = await supabaseAdmin
-    .from('files')
-    .select('path')
-    .eq('id', fileId)
-    .single();
-
-  if (fetchError) {
-    console.error('Error al obtener información del archivo:', fetchError);
-    throw fetchError;
-  }
-
-  if (file) {
-    await deleteFile(BUCKET_COURSES, file.path);
-
-    const { error: deleteError } = await supabaseAdmin
-      .from('files')
-      .delete()
-      .eq('id', fileId);
-
-    if (deleteError) {
-      console.error('Error al eliminar registro de archivo:', deleteError);
-      throw deleteError;
-    }
-  }
-}
-
 
 // ============================================
 // API de Archivos Excel de Cursos
@@ -994,45 +898,4 @@ export async function getAllExcelFiles(): Promise<Array<{
   }
 
   return result;
-}
-
-export async function associateExcelToCourse(
-  courseId: string,
-  excelFile: {
-    filename: string;
-    path: string;
-    size?: number;
-    contentType?: string;
-    category?: string;
-    phase?: string;
-  }
-): Promise<boolean> {
-  const course = await getCourseById(courseId);
-  if (!course) {
-    console.error(`No se encontró el curso con ID ${courseId}`);
-    return false;
-  }
-
-  const pathParts = excelFile.path.split('/');
-  const category = excelFile.category || (pathParts.length > 1 ? pathParts[0] : undefined);
-  const phase = excelFile.phase || (excelFile.filename.toLowerCase().startsWith('fase')
-    ? excelFile.filename.split('.')[0]
-    : 'Fase 1');
-
-  const { error } = await supabaseAdmin
-    .from('files')
-    .insert([{
-      course_id: courseId,
-      name: excelFile.filename,
-      path: excelFile.path,
-      type: excelFile.contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      size: excelFile.size || 0,
-    }]);
-
-  if (error) {
-    console.error(`Error al asociar archivo Excel al curso ${courseId}:`, error);
-    return false;
-  }
-
-  return true;
 }

@@ -5,6 +5,7 @@ import { Course } from '@/hooks/useCourses'
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from "@/hooks/useCart"
 import { useRouter } from 'next/navigation'
+import { getCourseUnavailableLabel } from '@/lib/course-availability'
 
 export default function AddToCartButton({ course }: { course: Course }) {
   const [isAdded, setIsAdded] = useState(false)
@@ -12,9 +13,20 @@ export default function AddToCartButton({ course }: { course: Course }) {
   const { toast } = useToast()
   const { addToCart, cart } = useCart()
   const router = useRouter()
+  const unavailableLabel = getCourseUnavailableLabel(course)
 
   const handleAddToCart = async () => {
     setIsProcessing(true)
+
+    if (unavailableLabel) {
+      toast({
+        title: "Programa no disponible",
+        description: `${course.title} no está disponible para compra.`,
+        variant: "destructive",
+      })
+      setIsProcessing(false)
+      return
+    }
     
     // Verificar si el curso ya está en el carrito
     const isCourseInCart = cart.some(item => item.id === course.id)
@@ -54,10 +66,10 @@ export default function AddToCartButton({ course }: { course: Course }) {
   return (
     <Button 
       onClick={handleAddToCart} 
-      disabled={isAdded || isProcessing}
+      disabled={Boolean(unavailableLabel) || isAdded || isProcessing}
       className="w-full"
     >
-      {isProcessing ? 'Procesando...' : isAdded ? 'Añadido al Carrito' : 'Añadir al Carrito'}
+      {unavailableLabel || (isProcessing ? 'Procesando...' : isAdded ? 'Añadido al Carrito' : 'Añadir al Carrito')}
     </Button>
   )
 }

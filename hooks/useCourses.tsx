@@ -241,8 +241,7 @@ export function CoursesProvider({ children }: { children: ReactNode }) {
     if (isFemale) {
       return allCategories.filter(cat => 
         cat.includes('Mujeres') || 
-        cat === 'Ganancia de Fuerza' || 
-        cat === 'Powerlifting'
+        cat === 'Ganancia de Fuerza'
       );
     }
     

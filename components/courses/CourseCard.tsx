@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { Course } from "@/hooks/useCourses";
+import { getCourseUnavailableLabel } from "@/lib/course-availability";
 
 interface CourseCardProps {
   course: Course;
@@ -26,13 +27,7 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
     return course.image;
   };
 
-  // Verificar si el curso debe mostrar "Próximamente"
-  const isComingSoon = () => {
-    const category = course.category?.toLowerCase() || "";
-
-    // Categorías que siempre muestran "PRÓXIMAMENTE"
-    return category.includes("ganancia de fuerza");
-  };
+  const unavailableLabel = getCourseUnavailableLabel(course);
 
   return (
     <Card className="flex flex-col bg-gradient-to-b from-red-500 to-black h-full transition-transform hover:scale-105 relative">
@@ -61,12 +56,12 @@ export function CourseCard({ course, isFemale }: CourseCardProps) {
         </div>
       </CardContent>
       <CardFooter className="mt-auto pt-4">
-        {isComingSoon() ? (
+        {unavailableLabel ? (
           <Button
             className="w-full bg-gray-500 hover:bg-gray-500 transition-colors cursor-not-allowed opacity-70"
             disabled
           >
-            PRÓXIMAMENTE
+            {unavailableLabel}
           </Button>
         ) : (
           <Link href={`/course/${course.id}`} className="w-full">

@@ -11,7 +11,6 @@ type PurchasedCourse = {
   title: string;
   description: string;
   category: string | null;
-  image_url?: string | null;
 }
 
 function fallbackImage(course: PurchasedCourse): string {
@@ -92,7 +91,7 @@ export default function MyCourses() {
             <CardHeader>
               <div className="relative w-full aspect-video mb-4">
                 <Image
-                  src={course.image_url || fallbackImage(course)}
+                  src={fallbackImage(course)}
                   alt={course.title}
                   fill
                   className="object-cover rounded-md"

@@ -14,8 +14,10 @@ import { useCourses, Course } from "@/hooks/useCourses";
 import { Loader2, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
 
-export default function CoursePage({ params }: { params: { id: string } }) {
+export default function CoursePage() {
+  const params = useParams<{ id: string }>();
   const { courses, loading, getCourseById } = useCourses();
   const [isFemale, setIsFemale] = useState<boolean>(false);
   const [course, setCourse] = useState<Course | undefined>(undefined);

@@ -4,15 +4,12 @@ import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { FileText, FileVideo, FileImage, FileAudio, Download, BookOpen } from "lucide-react"
+import { FileText, Download, BookOpen } from "lucide-react"
 
-interface Material {
-  id: string
-  title: string
-  description: string | null
-  fileUrl: string
-  fileType: string
-  createdAt: string
+interface CourseFile {
+  index: number
+  filename: string
+  downloadUrl: string
 }
 
 interface CourseDetails {
@@ -30,7 +27,7 @@ export default function CourseContentPage() {
   
   const [isLoading, setIsLoading] = useState(true)
   const [course, setCourse] = useState<CourseDetails | null>(null)
-  const [materials, setMaterials] = useState<Material[]>([])
+  const [courseFiles, setCourseFiles] = useState<CourseFile[]>([])
   const [hasAccess, setHasAccess] = useState(false)
   
   useEffect(() => {
@@ -63,13 +60,14 @@ export default function CourseContentPage() {
         const courseData = await courseResponse.json()
         setCourse(courseData)
         
-        // Obtener materiales del curso
-        const materialsResponse = await fetch(`/api/courses/${courseId}/materials`)
-        if (!materialsResponse.ok) {
-          throw new Error('No se pudieron cargar los materiales')
+        // Obtener archivos del curso desde el bucket course-excel
+        const filesResponse = await fetch(`/api/courses/excel/${courseId}?metadata=1`)
+        if (filesResponse.ok) {
+          const filesData = await filesResponse.json()
+          setCourseFiles(Array.isArray(filesData.files) ? filesData.files : [])
+        } else if (filesResponse.status !== 404) {
+          throw new Error('No se pudieron cargar los archivos del programa')
         }
-        const materialsData = await materialsResponse.json()
-        setMaterials(materialsData)
       } catch (error) {
         console.error('Error cargando datos:', error)
         toast({
@@ -84,18 +82,6 @@ export default function CourseContentPage() {
     
     fetchCourseAndMaterials()
   }, [courseId, toast, router])
-  
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) {
-      return <FileImage className="h-6 w-6" />
-    } else if (fileType.startsWith('video/')) {
-      return <FileVideo className="h-6 w-6" />
-    } else if (fileType.startsWith('audio/')) {
-      return <FileAudio className="h-6 w-6" />
-    } else {
-      return <FileText className="h-6 w-6" />
-    }
-  }
   
   if (!hasAccess) {
     return null // No mostrar nada si no tiene acceso, ya se redirigió
@@ -125,9 +111,9 @@ export default function CourseContentPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Materiales del curso</CardTitle>
+          <CardTitle>Archivos del programa</CardTitle>
           <CardDescription>
-            Archivos y recursos para tu aprendizaje
+            Descarga los archivos asociados a tu compra
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,30 +121,26 @@ export default function CourseContentPage() {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
-          ) : materials.length === 0 ? (
+          ) : courseFiles.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <BookOpen className="h-12 w-12 mx-auto mb-2" />
-              <p>No hay materiales disponibles para este curso.</p>
-              <p className="text-sm">Pronto se añadirán nuevos recursos.</p>
+              <p>No hay archivos disponibles para este programa.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {materials.map((material) => (
-                <Card key={material.id} className="overflow-hidden">
+              {courseFiles.map((file) => (
+                <Card key={`${file.index}-${file.filename}`} className="overflow-hidden">
                   <div className="p-4 flex items-start space-x-4">
                     <div className="bg-gray-100 p-3 rounded">
-                      {getFileIcon(material.fileType)}
+                      <FileText className="h-6 w-6" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium">{material.title}</h3>
-                      {material.description && (
-                        <p className="text-sm text-gray-500 mt-1">{material.description}</p>
-                      )}
+                      <h3 className="font-medium break-words">{file.filename}</h3>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="mt-3 flex items-center"
-                        onClick={() => window.open(`/api/courses/materials/${material.id}/download`, '_blank')}
+                        onClick={() => window.open(file.downloadUrl, '_blank')}
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Descargar
